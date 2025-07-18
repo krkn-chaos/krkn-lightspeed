@@ -1,0 +1,16 @@
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+langgraph
+typing-extensions
+llama-cpp-python
+langchain-huggingface
+chromadb
+transformers
+huggingface_hub
+sentence-transformers
+tqdm
+torch
+streamlit
+pypdf

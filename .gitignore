@@ -1,0 +1,6 @@
+models/** 
+*/.DS_Store
+.DS_Store
+venv*/*
+chroma_db/*
+granite.py
