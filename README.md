@@ -27,7 +27,7 @@ ollama run llama3
 ```
 Ensure that ollama is running in the background
 
-If using the llama 2.7 model, create a folder in the base repo called "models", [download the model](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf) and add it to the "models" folder in the project
+If using the llama 2.7 model, create a folder in the base directory called "models", [download the model](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf) and add it to the "models" folder in the project
 
 ### Terminal Interface
 1. open main.py and uncomment the code for the generative model you would like to use
