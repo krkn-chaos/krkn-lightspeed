@@ -1,6 +1,8 @@
 # krkn-lightspeed
 This is a RAG chatbot built using LangGraph, LangChain, and either the IBM Granite model, LLaMA 3.1 via Ollama, or LLama 2.7. The chatbot answers technical questions based on the KRKN pod scenarios documentation.
 
+Note: To ensure accurate responses based on the provided documentation, please include the keyword “krkn” or other krkn context in your questions. This helps the system retrieve relevant context from the Krkn knowledge base, rather than generating general answers from unrelated sources.
+
 ## Setup Instructions
 
 ### 1. Clone the Repository
