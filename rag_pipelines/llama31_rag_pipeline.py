@@ -61,13 +61,6 @@ def load_llama31_rag_pipeline():
         response = llm.invoke(messages)
         return {"answer": response}
 
-
-    # llama and openaI model
-        '''
-        response = llm.invoke(messages)
-        
-        return {"answer": response}
-        '''
     # Compile the graph
     graph_builder = StateGraph(State).add_sequence([retrieve, generate])
     graph_builder.add_edge(START, "retrieve")
