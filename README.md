@@ -49,6 +49,9 @@ LLM performance improves significantly with better laptop hardware. LLM was test
 
 Answers were generated in **under 10 seconds** on laptop 1, whereas answers were generated in **15-30 seconds** on laptop 2. (for llama 3.1 LLM)
 
+## Roadmap
+Enhancements being planned can be found in the [roadmap](roadmap.md)
+
 ## Evaluating the model
 If you want to evaluate the performance of the LLM being used to generate answers: 
 [User guide to the evaluation pipeline](https://docs.google.com/document/d/1Z8KLLzhMC8zJf-aQJg4LkeROuzAB71A5U3-HyiICo8g/edit?tab=t.0)
