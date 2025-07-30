@@ -14,4 +14,4 @@ tqdm
 torch
 streamlit
 pypdf
-numpy 1.26.2
+numpy==1.26.2
