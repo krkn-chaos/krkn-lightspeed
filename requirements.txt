@@ -14,3 +14,4 @@ tqdm
 torch
 streamlit
 pypdf
+numpy 1.26.2
