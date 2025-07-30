@@ -12,6 +12,7 @@ from langchain_community.llms import Ollama
 from utils.document_loader import load_and_split_docs
 
 
+
 '''
 Code from langchain's Build a RAG App documentation
 https://python.langchain.com/docs/tutorials/rag/
