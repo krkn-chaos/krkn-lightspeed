@@ -8,6 +8,7 @@ from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
+from utils.document_loader import load_and_split_docs
 
 '''
 Code from langchain's Build a RAG App documentation
@@ -17,18 +18,14 @@ https://python.langchain.com/docs/tutorials/rag/
 def load_llama31_rag_pipeline(): 
 # load and chunk contents of thepytohnPDF
 
-    loader1 = PyPDFLoader("data/pod_scenarios.pdf")
-    loader2 = PyPDFLoader("data/Pod-Scenarios-using-Krknctl.pdf")
-    loader3 = PyPDFLoader("data/Pod-Scenarios-using-Krkn-hub.pdf")
-    loader4 = PyPDFLoader("data/Pod-Scenarios-using-Krkn.pdf")
-
-    docs1 = loader1.load()
-    docs2 = loader2.load()
-    docs3 = loader3.load()
-    docs4 = loader4.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    all_splits = text_splitter.split_documents(docs1 + docs2+ docs3+ docs4)
+    pdf_paths = [
+        "data/pod_scenarios.pdf",
+        "data/Pod-Scenarios-using-Krknctl.pdf",
+        "data/Pod-Scenarios-using-Krkn-hub.pdf",
+        "data/Pod-Scenarios-using-Krkn.pdf",
+        "data/all-scenario-env.md"
+    ]
+    all_splits = load_and_split_docs(pdf_paths)
 
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
