@@ -1,9 +1,6 @@
 from langchain import hub
-#from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
-#from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-#from langchain_community.embeddings import HuggingFaceEmbeddings
 from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_huggingface import HuggingFaceEmbeddings
