@@ -20,6 +20,7 @@ pip install -r requirements.txt
 ```
 ## Running the Chatbot
 
+### On macOS: 
 If using the llama 3.1 LLM (reccomended), run this script: 
 ```bash
 brew install ollama
@@ -31,6 +32,8 @@ If using llama 2:7b LLM, run this script:
 brew install ollama
 ollama pull llama2:7b
 ```
+### Other operating systems :
+Download instructions [here](https://ollama.com/download)
 
 Ensure that ollama is running in the background
 
