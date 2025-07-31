@@ -1,6 +1,8 @@
 # krkn-lightspeed
 This is a RAG chatbot built using LangGraph, LangChain, and either the IBM Granite model, LLaMA 3.1 via Ollama, or LLama 2. The chatbot answers technical questions based on the KRKN pod scenarios documentation.
 
+Note: To ensure accurate responses based on the provided documentation, please include the keyword “krkn” or other krkn context in your questions. This helps the system retrieve relevant context from the Krkn knowledge base, rather than generating general answers from unrelated sources.
+
 ## Setup Instructions
 
 ### 1. Clone the Repository
@@ -51,6 +53,9 @@ LLM performance improves significantly with better laptop hardware. LLM was test
 2. **Laptop 2**: Apple M1, 16 GB RAM, 8-core CPU, 12-core GPU
 
 Answers were generated in **under 10 seconds** on laptop 1, whereas answers were generated in **15-30 seconds** on laptop 2. (for llama 3.1 LLM)
+
+## Roadmap
+Enhancements being planned can be found in the [roadmap](roadmap.md)
 
 ## Evaluating the model
 If you want to evaluate the performance of the LLM being used to generate answers: 

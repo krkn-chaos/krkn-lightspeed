@@ -9,6 +9,7 @@ from typing_extensions import List, TypedDict
 from langchain_huggingface import HuggingFaceEmbeddings
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from utils.pdf_loader import load_and_split_pdfs
 
 '''
 Code from langchain's Build a RAG App documentation
@@ -17,18 +18,14 @@ https://python.langchain.com/docs/tutorials/rag/
 
 def load_granite_rag_pipline():
     # load and chunk contents of thepytohnPDF
-    loader1 = PyPDFLoader("data/pod_scenarios.pdf")
-    loader2 = PyPDFLoader("data/Pod-Scenarios-using-Krknctl.pdf")
-    loader3 = PyPDFLoader("data/Pod-Scenarios-using-Krkn-hub.pdf")
-    loader4 = PyPDFLoader("data/Pod-Scenarios-using-Krkn.pdf")
+    pdf_paths = [
+        "data/pod_scenarios.pdf",
+        "data/Pod-Scenarios-using-Krknctl.pdf",
+        "data/Pod-Scenarios-using-Krkn-hub.pdf",
+        "data/Pod-Scenarios-using-Krkn.pdf"
+    ]
+    all_splits = load_and_split_pdfs(pdf_paths)
 
-    docs1 = loader1.load()
-    docs2 = loader2.load()
-    docs3 = loader3.load()
-    docs4 = loader4.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    all_splits = text_splitter.split_documents(docs1 + docs2+ docs3+ docs4)
     
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")

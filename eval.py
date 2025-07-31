@@ -13,7 +13,7 @@ graph = load_granite_rag_pipline()
 #END OF GRANITE MODEL LOGIC'''
 
 
-'''# START OF LLAMA 3.1 LOGIC
+# START OF LLAMA 3.1 LOGIC
 #llama 3.1
 graph = load_llama31_rag_pipeline()
 # END OF LLAMA 3.1 LOGIC'''
@@ -117,9 +117,10 @@ for i, q in enumerate(questions):
             "generated_answer": result["answer"],
             "retrieved_context": retrieved_context,
             "reference_answer": reference_answers[i],
-        })
     if i < len(reference_answers):
         duration_seconds.append(duration)
+            "duration_seconds": duration      #not a part of the json structure but useful metrics to have
+        })
 
 
 output = {
