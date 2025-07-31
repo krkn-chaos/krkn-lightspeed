@@ -20,26 +20,6 @@ from rag_pipelines.llama27_rag_pipeline import load_llama27_rag_pipeline
 
 # UNCOMMENT THE CODE FOR THE MODEL THAT YOU ARE NOT USING BEFORE RUNNING
 
-'''#START OF GRANITE MODEL LOGIC
-#granite
-graph = load_granite_rag_pipline()
-
-# run in a loop
-while True:
-    q = input("Ask a question (or type 'exit'): ")
-    if q.lower() in ["exit", "quit"]:
-        break
-    start_time = time.time()
-    result = graph.invoke({"question": q})
-    end_time = time.time()
-    duration = end_time - start_time
-    
-    print("Time taken:", round(duration, 2), "seconds")
-
-
-    print("\nAnswer:", result["answer"])
-#END OF GRANITE MODEL LOGIC
-
 #START OF LLAMA 3.1 MODEL LOGIC
 #llama 3.1
 graph = load_llama31_rag_pipeline()
@@ -58,10 +38,10 @@ while True:
 
 
     print("\nAnswer:", result["answer"])
-#END OF LLAMA 3.1 MODEL LOGIC'''
+#END OF LLAMA 3.1 MODEL LOGIC
 
 
-#START OF LLAMA 2.7 MODEL LOGIC
+'''#START OF LLAMA 2.7 MODEL LOGIC
 #llama 2.7
 graph = load_llama27_rag_pipeline()
 
@@ -79,4 +59,25 @@ while True:
 
 
     print("\nAnswer:", result["answer"])
-#END OF LLAMA 2.7 MODEL LOGIC
+#END OF LLAMA 2.7 MODEL LOGIC'''
+
+
+'''#START OF GRANITE MODEL LOGIC
+#granite
+graph = load_granite_rag_pipline()
+
+# run in a loop
+while True:
+    q = input("Ask a question (or type 'exit'): ")
+    if q.lower() in ["exit", "quit"]:
+        break
+    start_time = time.time()
+    result = graph.invoke({"question": q})
+    end_time = time.time()
+    duration = end_time - start_time
+    
+    print("Time taken:", round(duration, 2), "seconds")
+
+
+    print("\nAnswer:", result["answer"])
+#END OF GRANITE MODEL LOGIC'''
