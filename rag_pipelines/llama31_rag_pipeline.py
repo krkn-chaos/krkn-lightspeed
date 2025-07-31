@@ -5,7 +5,7 @@ from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
-from utils.pdf_loader import load_and_split_pdfs
+from utils.document_loader import load_and_split_docs
 
 '''
 Code from langchain's Build a RAG App documentation
@@ -15,13 +15,7 @@ https://python.langchain.com/docs/tutorials/rag/
 def load_llama31_rag_pipeline(): 
 # load and chunk contents of thepytohnPDF
 
-    pdf_paths = [
-        "data/pod_scenarios.pdf",
-        "data/Pod-Scenarios-using-Krknctl.pdf",
-        "data/Pod-Scenarios-using-Krkn-hub.pdf",
-        "data/Pod-Scenarios-using-Krkn.pdf"
-    ]
-    all_splits = load_and_split_pdfs(pdf_paths)
+    all_splits = load_and_split_docs("data")
 
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")

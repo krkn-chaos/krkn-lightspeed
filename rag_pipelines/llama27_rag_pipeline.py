@@ -9,7 +9,8 @@ from typing_extensions import List, TypedDict
 from langchain_community.llms import LlamaCpp
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
-from utils.pdf_loader import load_and_split_pdfs
+from utils.document_loader import load_and_split_docs
+
 
 
 '''
@@ -26,7 +27,7 @@ def load_llama27_rag_pipeline():
         "data/Pod-Scenarios-using-Krkn-hub.pdf",
         "data/Pod-Scenarios-using-Krkn.pdf"
     ]
-    all_splits = load_and_split_pdfs(pdf_paths)
+    all_splits = load_and_split_docs(pdf_paths)
 
 
     # embed and store in vector database

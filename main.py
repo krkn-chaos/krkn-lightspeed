@@ -38,7 +38,7 @@ while True:
 
 
     print("\nAnswer:", result["answer"])
-#END OF GRANITE MODEL LOGIC
+#END OF GRANITE MODEL LOGIC'''
 
 #START OF LLAMA 3.1 MODEL LOGIC
 #llama 3.1
@@ -58,9 +58,9 @@ while True:
 
 
     print("\nAnswer:", result["answer"])
-#END OF LLAMA 3.1 MODEL LOGIC'''
+#END OF LLAMA 3.1 MODEL LOGIC
 
-
+'''
 #START OF LLAMA 2.7 MODEL LOGIC
 #llama 2.7
 graph = load_llama27_rag_pipeline()
@@ -80,3 +80,4 @@ while True:
 
     print("\nAnswer:", result["answer"])
 #END OF LLAMA 2.7 MODEL LOGIC
+'''
