@@ -40,7 +40,6 @@ graph = load_granite_rag_pipline()
 run_question_loop(graph)
 
 #END OF GRANITE MODEL LOGIC
->>>>>>> ac1601d (called graph function in main)
 
 
 #START OF LLAMA 2.7 MODEL LOGIC
