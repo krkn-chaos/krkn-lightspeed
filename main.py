@@ -38,7 +38,6 @@ while True:
 
 
     print("\nAnswer:", result["answer"])
-#END OF LLAMA 3.1 MODEL LOGIC
 
 
 '''#START OF LLAMA 2.7 MODEL LOGIC
@@ -80,4 +79,3 @@ while True:
 
 
     print("\nAnswer:", result["answer"])
-#END OF GRANITE MODEL LOGIC'''
