@@ -6,7 +6,6 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
-from langchain_community.llms import LlamaCpp
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
 from utils.document_loader import load_and_split_docs
@@ -40,16 +39,9 @@ def load_llama27_rag_pipeline():
     prompt = hub.pull("rlm/rag-prompt")
 
 
-    llm = LlamaCpp(
-        model_path="./models/llama-2-7b-chat.Q4_K_M.gguf",
-        n_ctx=2048,
-        n_gpu_layers=1,  
-    )
-    
+    llm = Ollama(model="llama2:7b", base_url="http://127.0.0.1:11434")
 
-    '''llm = Ollama(model="llama2.7", base_url="http://127.0.0.1:11434")'''
 
-        
     # Define state for application
     class State(TypedDict):
         question: str
