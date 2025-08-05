@@ -1,5 +1,5 @@
 # krkn-lightspeed
-This is a RAG chatbot built using LangGraph, LangChain, and either the IBM Granite model, LLaMA 3.1 via Ollama, or LLama 2.7. The chatbot answers technical questions based on the KRKN pod scenarios documentation.
+This is a RAG chatbot built using LangGraph, LangChain, and either the IBM Granite model, LLaMA 3.1 via Ollama, or LLama 2. The chatbot answers technical questions based on the KRKN pod scenarios documentation.
 
 Note: To ensure accurate responses based on the provided documentation, please include the keyword “krkn” or other krkn context in your questions. This helps the system retrieve relevant context from the Krkn knowledge base, rather than generating general answers from unrelated sources.
 
@@ -22,17 +22,25 @@ pip install -r requirements.txt
 ```
 ## Running the Chatbot
 
-If using the llama 3.1 generative model, run this script: 
+### On macOS: 
+If using the llama 3.1 LLM (reccomended), run this script: 
 ```bash
 brew install ollama
 ollama run llama3
 ```
+
+If using llama 2:7b LLM, run this script: 
+```bash
+brew install ollama
+ollama pull llama2:7b
+```
+### Other operating systems :
+Download instructions [here](https://ollama.com/download)
+
 Ensure that ollama is running in the background
 
-If using the llama 2.7 model, create a folder in the project's base directory called "models", [download the model](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf) and add it to the "models" folder in the project
-
 ### Terminal Interface
-1. open main.py and uncomment the code for the generative model you would like to use
+1. open main.py and uncomment the code for the LLM you would like to use
 2. run ```python3 main.py``` (depending on your python version)
 
 
@@ -50,6 +58,7 @@ Answers were generated in **under 10 seconds** on laptop 1, whereas answers were
 Enhancements being planned can be found in the [roadmap](roadmap.md)
 
 ## Evaluating the model
+If you want to evaluate the performance of the LLM being used to generate answers: 
 [User guide to the evaluation pipeline](https://docs.google.com/document/d/1Z8KLLzhMC8zJf-aQJg4LkeROuzAB71A5U3-HyiICo8g/edit?tab=t.0)
 
 Note: The output of steps 1-3 are the files in the folder ```evaluationPipeline ```
@@ -62,3 +71,5 @@ Note: The output of steps 1-3 are the files in the folder ```evaluationPipeline 
 6. evaluation metrics should be emailed to you
 
 [Evaluation data](https://drive.google.com/drive/folders/1pLRgeLMEEvxacZML3B7Ges5nnsJr4t-W?usp=drive_link)
+
+

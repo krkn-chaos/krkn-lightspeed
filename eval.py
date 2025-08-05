@@ -18,7 +18,7 @@ graph = load_granite_rag_pipline()
 graph = load_llama31_rag_pipeline()
 # END OF LLAMA 3.1 LOGIC'''
 
-'''# START OF LLAMA 2.7 LOGIC
+# START OF LLAMA 2.7 LOGIC
 #llama 2.7
 graph = load_llama27_rag_pipeline()
 # END OF LLAMA 2.7 LOGIC'''
@@ -101,6 +101,7 @@ reference_answers = [
   ]
 
 evaluation_data = []
+duration_seconds = []
 
 for i, q in enumerate(questions):
     start_time = time.time()
@@ -116,13 +117,16 @@ for i, q in enumerate(questions):
             "generated_answer": result["answer"],
             "retrieved_context": retrieved_context,
             "reference_answer": reference_answers[i],
+    if i < len(reference_answers):
+        duration_seconds.append(duration)
             "duration_seconds": duration      #not a part of the json structure but useful metrics to have
         })
 
 
 output = {
     "items": evaluation_data,
-    "email": "user_email@example.com"  
+    "email": "user_email@example.com", 
+    "duration": duration_seconds
 }
 
 # Save to file
