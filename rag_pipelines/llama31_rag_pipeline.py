@@ -2,9 +2,9 @@ from langchain import hub
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
+from utils.pdf_loader import load_and_split_pdfs
 from utils.build_collections import *
 from utils.state_graph import *
-from utils.document_loader import load_and_split_docs
 
 '''
 Code from langchain's Build a RAG App documentation
@@ -12,9 +12,7 @@ https://python.langchain.com/docs/tutorials/rag/
 '''
 
 def load_llama31_rag_pipeline(): 
-# load and chunk contents of thepytohnPDF
-
-    all_splits = load_and_split_docs("data")
+    all_splits = load_and_split_pdfs("data")
 
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
@@ -27,6 +25,6 @@ def load_llama31_rag_pipeline():
 
 
     llm = Ollama(model="llama3.1", base_url="http://127.0.0.1:11434")
-
     
-    build_state_graph(vector_store, prompt, llm)
+    graph = build_state_graph(vector_store, prompt, llm)
+    return graph
