@@ -1,11 +1,9 @@
 from langchain import hub
-from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
-from langgraph.graph import START, StateGraph
-from typing_extensions import List, TypedDict
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
 from utils.document_loader import load_and_split_docs
+from utils.state_graph import *
 
 '''
 Code from langchain's Build a RAG App documentation
@@ -13,8 +11,6 @@ https://python.langchain.com/docs/tutorials/rag/
 '''
 
 def load_llama31_rag_pipeline(): 
-# load and chunk contents of thepytohnPDF
-
     all_splits = load_and_split_docs("data")
 
     # embed and store in vector database
@@ -28,29 +24,6 @@ def load_llama31_rag_pipeline():
 
 
     llm = Ollama(model="llama3.1", base_url="http://127.0.0.1:11434")
-
     
-
-    # Define state for application
-    class State(TypedDict):
-        question: str
-        context: List[Document]
-        answer: str
-
-    # Define application steps
-    def retrieve(state: State):
-        retrieved_docs = vector_store.similarity_search(state["question"])
-        return {"context": retrieved_docs}
-
-    def generate(state: State):
-        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = prompt.invoke({"question": state["question"], "context": docs_content})
-        response = llm.invoke(messages)
-        return {"answer": response}
-
-    # Compile the graph
-    graph_builder = StateGraph(State).add_sequence([retrieve, generate])
-    graph_builder.add_edge(START, "retrieve")
-    graph = graph_builder.compile()
-
+    graph = build_state_graph(vector_store, prompt, llm)
     return graph
