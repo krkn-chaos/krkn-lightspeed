@@ -11,7 +11,7 @@ https://python.langchain.com/docs/tutorials/rag/
 '''
 
 def load_llama31_rag_pipeline(): 
-    all_splits = load_and_split_pdfs("data")
+    all_splits = load_and_split_docs("data")
 
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
