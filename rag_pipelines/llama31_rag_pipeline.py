@@ -4,6 +4,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
 from utils.document_loader import load_and_split_docs
 from utils.state_graph import *
+from utils.build_collections import *
 
 '''
 Code from langchain's Build a RAG App documentation
@@ -15,7 +16,12 @@ def load_llama31_rag_pipeline():
 
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
-    vector_store = Chroma.from_documents(documents=all_splits, embedding=embedding_model)
+    #vector_store = Chroma.from_documents(documents=all_splits, embedding=embedding_model)
+    vector_store = load_or_create_chroma_collection(
+    collection_name="krkn-docs",
+    embedding_model=embedding_model,
+    all_splits=all_splits
+)
 
     # Define prompt for question-answering
     # N.B. for non-US LangSmith endpoints, you may need to specify
