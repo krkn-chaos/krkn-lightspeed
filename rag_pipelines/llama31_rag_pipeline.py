@@ -2,6 +2,8 @@ from langchain import hub
 from langchain_community.llms import Ollama
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.llms import Ollama
+from utils.build_collections import *
 
 from utils.document_loader import load_and_split_docs
 from utils.state_graph import build_state_graph
@@ -16,12 +18,13 @@ def load_llama31_rag_pipeline():
     all_splits = load_and_split_docs("data")
 
     # embed and store in vector database
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="Qwen/Qwen3-Embedding-0.6B"
-    )
-    vector_store = Chroma.from_documents(
-        documents=all_splits, embedding=embedding_model
-    )
+    embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
+    #vector_store = Chroma.from_documents(documents=all_splits, embedding=embedding_model)
+    vector_store = load_or_create_chroma_collection(
+    collection_name="krkn-docs",
+    embedding_model=embedding_model,
+    all_splits=all_splits
+)
 
     # Define prompt for question-answering
     # N.B. for non-US LangSmith endpoints, you may need to specify
