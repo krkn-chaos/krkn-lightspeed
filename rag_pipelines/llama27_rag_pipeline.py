@@ -8,8 +8,8 @@ from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
-from utils.document_loader import load_and_split_docs
-
+from utils.document_loader import load_and_split
+from utils.state_graph import *
 
 
 '''
@@ -20,13 +20,13 @@ https://python.langchain.com/docs/tutorials/rag/
 def load_llama27_rag_pipeline(): 
 # load and chunk contents of thepytohnPDF
 
-    pdf_paths = [
-        "data/pod_scenarios.pdf",
-        "data/Pod-Scenarios-using-Krknctl.pdf",
-        "data/Pod-Scenarios-using-Krkn-hub.pdf",
-        "data/Pod-Scenarios-using-Krkn.pdf"
-    ]
-    all_splits = load_and_split_docs(pdf_paths)
+    urls = [
+        "https://krkn-chaos.dev/docs/",
+        "https://krkn-chaos.dev/docs/krkn/",
+        "https://krkn-chaos.dev/docs/krkn-hub/",
+        "data"
+        ]
+    all_splits = load_and_split(urls)
 
 
     # embed and store in vector database
@@ -41,27 +41,5 @@ def load_llama27_rag_pipeline():
 
     llm = Ollama(model="llama2:7b", base_url="http://127.0.0.1:11434")
 
-
-    # Define state for application
-    class State(TypedDict):
-        question: str
-        context: List[Document]
-        answer: str
-
-    # Define application steps
-    def retrieve(state: State):
-        retrieved_docs = vector_store.similarity_search(state["question"])
-        return {"context": retrieved_docs}
-
-    def generate(state: State):
-        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = prompt.invoke({"question": state["question"], "context": docs_content})
-        response = llm.invoke(messages)
-        return {"answer": response}
-
-    # Compile the graph
-    graph_builder = StateGraph(State).add_sequence([retrieve, generate])
-    graph_builder.add_edge(START, "retrieve")
-    graph = graph_builder.compile()
-
+    graph = build_state_graph(vector_store, prompt, llm)
     return graph
