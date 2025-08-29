@@ -4,4 +4,5 @@ models/**
 venv*/*
 chroma_db/*
 granite.py
-utils/__pycache__/
+*/__pycache__/
+*.json
