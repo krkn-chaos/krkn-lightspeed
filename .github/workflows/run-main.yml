@@ -34,7 +34,7 @@ jobs:
         set timeout 60
         spawn python main.py
         expect "Ask a question"
-        send "what is krkn?\r"
+        send "what is krkn pod-scenarios?\r"
         expect "Ask a question"
         send "exit\r"
         EOD
