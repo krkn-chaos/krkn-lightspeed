@@ -4,7 +4,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
 from utils.document_loader import load_and_split_docs
-#from utils.state_graph import build_state_graph
+from utils.state_graph import build_state_graph
 
 """
 Code from langchain's Build a RAG App documentation
