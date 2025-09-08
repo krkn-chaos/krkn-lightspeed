@@ -7,6 +7,7 @@ from langgraph.graph import START, StateGraph
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing_extensions import List, TypedDict
 
+from utils.state_graph import build_state_graph
 from utils.pdf_loader import load_and_split_pdfs
 
 """
@@ -49,44 +50,5 @@ def load_granite_rag_pipline():
     model.to(device)
     model.eval()
 
-    # Define state for application
-    class State(TypedDict):
-        question: str
-        context: List[Document]
-        answer: str
-
-    # Define application steps
-    def retrieve(state: State):
-        retrieved_docs = vector_store.similarity_search(state["question"])
-        return {"context": retrieved_docs}
-
-    def generate(state: State):
-        docs_content = "\n\n".join(
-            doc.page_content for doc in state["context"]
-        )
-        messages = prompt.invoke(
-            {"question": state["question"], "context": docs_content}
-        )
-
-        # convert ChatPromptValue to plain text prompt
-        if hasattr(messages, "to_messages"):  # it's a ChatPromptValue
-            chat_messages = messages.to_messages()
-            prompt_str = "\n".join([m.content for m in chat_messages])
-        else:
-            raise ValueError("Unexpected message format")
-
-        # tokenize and run the Granite model
-        input_tokens = tokenizer(prompt_str, return_tensors="pt").to(
-            model.device
-        )
-        output_tokens = model.generate(**input_tokens, max_new_tokens=512)
-        response = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
-
-        return {"answer": response}
-
-    # Compile the graph
-    graph_builder = StateGraph(State).add_sequence([retrieve, generate])
-    graph_builder.add_edge(START, "retrieve")
-    graph = graph_builder.compile()
-
+    graph = build_state_graph(vector_store, prompt, model=model, tokenizer=tokenizer)
     return graph

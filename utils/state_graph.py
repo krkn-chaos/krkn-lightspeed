@@ -5,7 +5,7 @@ from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
 
 
-def build_state_graph(vector_store, prompt, llm):
+def build_state_graph(vector_store, prompt, llm=None, tokenizer=None, model=None):
 
     # Define state for application
     class State(TypedDict):
@@ -25,7 +25,23 @@ def build_state_graph(vector_store, prompt, llm):
         messages = prompt.invoke(
             {"question": state["question"], "context": docs_content}
         )
-        response = llm.invoke(messages)
+        if llm: 
+            response = llm.invoke(messages)
+        else:
+            # convert ChatPromptValue to plain text prompt
+            if hasattr(messages, "to_messages"):  # it's a ChatPromptValue
+                chat_messages = messages.to_messages()
+                prompt_str = "\n".join([m.content for m in chat_messages])
+            else:
+                raise ValueError("Unexpected message format")
+
+            # tokenize and run the Granite model
+            input_tokens = tokenizer(prompt_str, return_tensors="pt").to(
+                model.device
+            )
+            output_tokens = model.generate(**input_tokens, max_new_tokens=512)
+            response = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+
         return {"answer": response}
 
     # Compile the graph
