@@ -1,11 +1,13 @@
-from rag_pipelines.rag_pipeline import load_rag_pipeline
 import streamlit as st
+
 from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
-#from granite_rag_pipeline import load_granite_rag_pipline
 
 
-#Code from streamlit LLM chat documentation
-#https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps/build-conversational-apps
+# from granite_rag_pipeline import load_granite_rag_pipline
+
+
+# Code from streamlit LLM chat documentation
+# https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps/build-conversational-apps
 
 
 st.title("krkn lightspeed RAG Chatbot")
@@ -14,10 +16,12 @@ st.title("krkn lightspeed RAG Chatbot")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+
 @st.cache_resource
 def get_graph():
     return load_llama31_rag_pipeline()
     # return load_granite_rag_pipeline()
+
 
 graph = get_graph()
 
@@ -39,4 +43,6 @@ if prompt := st.chat_input("Ask about krkn pod chaos scenarios..."):
             result = graph.invoke({"question": prompt})
             response = result["answer"]
             st.markdown(response)
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response}
+    )

@@ -1,20 +1,19 @@
-from langchain import hub
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langgraph.graph import START, StateGraph
-from typing_extensions import List, TypedDict
-from langchain_huggingface import HuggingFaceEmbeddings
 import torch
+from langchain import hub
+from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
+from langchain_huggingface import HuggingFaceEmbeddings
+from langgraph.graph import START, StateGraph
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from typing_extensions import List, TypedDict
+
 from utils.pdf_loader import load_and_split_pdfs
 
-'''
+"""
 Code from langchain's Build a RAG App documentation
 https://python.langchain.com/docs/tutorials/rag/
-'''
+"""
+
 
 def load_granite_rag_pipline():
     # load and chunk contents of thepytohnPDF
@@ -22,29 +21,33 @@ def load_granite_rag_pipline():
         "data/pod_scenarios.pdf",
         "data/Pod-Scenarios-using-Krknctl.pdf",
         "data/Pod-Scenarios-using-Krkn-hub.pdf",
-        "data/Pod-Scenarios-using-Krkn.pdf"
+        "data/Pod-Scenarios-using-Krkn.pdf",
     ]
     all_splits = load_and_split_pdfs(pdf_paths)
 
-    
     # embed and store in vector database
-    embedding_model = HuggingFaceEmbeddings(model_name="Qwen/Qwen3-Embedding-0.6B")
-    vector_store = Chroma.from_documents(documents= all_splits, embedding=embedding_model)
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="Qwen/Qwen3-Embedding-0.6B"
+    )
+    vector_store = Chroma.from_documents(
+        documents=all_splits, embedding=embedding_model
+    )
 
     # Define prompt for question-answering
     # N.B. for non-US LangSmith endpoints, you may need to specify
     # api_url="https://api.smith.langchain.com" in hub.pull.
     prompt = hub.pull("rlm/rag-prompt")
 
-    #granite
+    # granite
     model_id = "ibm-granite/granite-3b-code-base-2k"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto" if device == "cuda" else None)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id, device_map="auto" if device == "cuda" else None
+    )
     model.to(device)
     model.eval()
-
 
     # Define state for application
     class State(TypedDict):
@@ -58,8 +61,12 @@ def load_granite_rag_pipline():
         return {"context": retrieved_docs}
 
     def generate(state: State):
-        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = prompt.invoke({"question": state["question"], "context": docs_content})
+        docs_content = "\n\n".join(
+            doc.page_content for doc in state["context"]
+        )
+        messages = prompt.invoke(
+            {"question": state["question"], "context": docs_content}
+        )
 
         # convert ChatPromptValue to plain text prompt
         if hasattr(messages, "to_messages"):  # it's a ChatPromptValue
@@ -69,7 +76,9 @@ def load_granite_rag_pipline():
             raise ValueError("Unexpected message format")
 
         # tokenize and run the Granite model
-        input_tokens = tokenizer(prompt_str, return_tensors="pt").to(model.device)
+        input_tokens = tokenizer(prompt_str, return_tensors="pt").to(
+            model.device
+        )
         output_tokens = model.generate(**input_tokens, max_new_tokens=512)
         response = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
 

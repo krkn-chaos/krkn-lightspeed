@@ -1,31 +1,32 @@
-from rag_pipelines.granite_rag_pipeline import load_granite_rag_pipline
-from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
-from rag_pipelines.llama27_rag_pipeline import load_llama27_rag_pipeline
+# flake8: noqa
 
 import json
 import time
 
+from rag_pipelines.llama27_rag_pipeline import load_llama27_rag_pipeline
+from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
+
 # UNCOMMENT THE CODE FOR THE MODEL THAT YOU ARE NOT USING BEFORE RUNNING
 
-'''#START OF GRANITE MODEL LOGIC
+"""#START OF GRANITE MODEL LOGIC
 #granite
 graph = load_granite_rag_pipline()
-#END OF GRANITE MODEL LOGIC'''
+#END OF GRANITE MODEL LOGIC"""
 
 
 # START OF LLAMA 3.1 LOGIC
-#llama 3.1
+# llama 3.1
 graph = load_llama31_rag_pipeline()
 # END OF LLAMA 3.1 LOGIC'''
 
 # START OF LLAMA 2.7 LOGIC
-#llama 2.7
+# llama 2.7
 graph = load_llama27_rag_pipeline()
 # END OF LLAMA 2.7 LOGIC'''
 
 
 # 30 questions
-questions  =[
+questions = [ 
     "What is the primary objective of the 'Pod Scenarios' feature within Krkn-hub on a Kubernetes/OpenShift cluster?",
     "How can Cerberus be integrated with Krkn-hub's pod scenarios to monitor the cluster and determine the success or failure of a chaos injection?",
     "What is the standard Podman command structure for initiating a pod disruption scenario with Krkn-hub, including how to provide the kube config and enable host environment variables?",
@@ -60,13 +61,13 @@ questions  =[
     "How does the 'OpenShift System Pods' chaos scenario differ in its targeting approach compared to component-specific scenarios like 'Etcd' or 'Prometheus'?",
     "What is the purpose of the `id` field within a Krkn scenario configuration?",
     "Can the `kill-pods` scenario be configured to disrupt pods outside of the `kube-system` namespace?",
-    "Describe the hierarchical structure for defining chaos scenarios within the top-level `kraken` configuration block."
-  ]
-reference_answers = [
+    "Describe the hierarchical structure for defining chaos scenarios within the top-level `kraken` configuration block.",
+]
+reference_answers = [ 
     "The primary objective of the 'Pod Scenarios' feature in Krkn-hub is to disrupt pods that match a specified label within a designated namespace on either a Kubernetes or OpenShift cluster, simulating chaos conditions.",
     "To integrate Cerberus, it must be started before injecting chaos. For the chaos injection container to auto-connect with Cerberus and enable monitoring for pass/fail evaluation, the `CERBERUS_ENABLED` environment variable must be set.",
     "The standard Podman command is `podman run --name=<container_name> --net=host --env-host=true -v <path-to-kube-config>:/home/krkn/.kube/config:Z -d containers.krkn-chaos.dev/krkn-chaos/krkn-hub:pod-scenarios`. This command runs the scenario container, mounts the kube config, and uses `--env-host=true` to allow the container to access host environment variables.",
-    "To monitor ongoing logs, use `podman logs -f <container_name or container_id>` or `docker logs -f <container_name or container_id>`. To determine the final outcome (pass/fail), the exit code can be retrieved using `podman inspect <container-name or container_id> --format \"{{.State.ExitCode}}\"` or `docker inspect <container-name or container_id> --format \"{{.State.ExitCode}}\"`.",
+    'To monitor ongoing logs, use `podman logs -f <container_name or container_id>` or `docker logs -f <container_name or container_id>`. To determine the final outcome (pass/fail), the exit code can be retrieved using `podman inspect <container-name or container_id> --format "{{.State.ExitCode}}"` or `docker inspect <container-name or container_id> --format "{{.State.ExitCode}}"`.',
     "The `--env-host` option is not available with remote Podman clients, including those on Mac and Windows (excluding WSL2). In these situations, environment variables must be set individually on the Podman command line using the `-e <VARIABLE>=<value>` syntax for each variable.",
     "It is crucial because the Krkn-hub container runs with a non-root user, requiring the kube config to be globally readable. This can be achieved by first flattening the config and saving it (`kubectl config view --flatten > ~/kubeconfig`), and then changing its permissions to `444` (`chmod 444 ~/kubeconfig`) before mounting.",
     "Environment variables can be passed by setting them on the host running the container using `export <parameter_name>=<value>` if the `--env-host` option is used. Alternatively, they can always be passed directly on the command line when running the container using the `-e <VARIABLE>=<value>` flag.",
@@ -75,7 +76,7 @@ reference_answers = [
     "The `DISRUPTION_COUNT` parameter specifies the number of pods to disrupt, defaulting to `1`. The `KILL_TIMEOUT` parameter sets the maximum time (in seconds) to wait for target pods to be removed, defaulting to `180`. The `EXPECTED_RECOVERY_TIME` parameter defines the timeout (in seconds) for disrupted pods to recover, defaulting to `120`, and the scenario fails if recovery doesn't occur within this period.",
     "The `NAMESPACE` environment variable can be set to `openshift-.*` to randomly select and disrupt pods within OpenShift system namespaces. For continuous reliability testing, `DAEMON_MODE` can be enabled to disrupt pods every 'x' seconds in the background.",
     "When `CAPTURE_METRICS` or `ENABLE_ALERTS` are active, custom profiles must be mounted from the host into the container using volume mounts. The custom metrics profile should be mounted to `/home/krkn/kraken/config/metrics-aggregated.yaml`, and the custom alerts profile to `/home/krkn/kraken/config/alerts`.",
-    "To precisely identify target pods for disruption, users can leverage three parameters: `--namespace`, `--pod-label`, and `--name-pattern`. The `--namespace` parameter allows targeting pods within a specific namespace, supporting regular expressions, with a default of `openshift-*`. The `--pod-label` parameter targets pods based on a specific label, such as \"app=test\". If `--pod-label` is not specified, the `--name-pattern` parameter, which defaults to `.*`, is used as a regex pattern to match pods within the specified `--namespace`.",
+    'To precisely identify target pods for disruption, users can leverage three parameters: `--namespace`, `--pod-label`, and `--name-pattern`. The `--namespace` parameter allows targeting pods within a specific namespace, supporting regular expressions, with a default of `openshift-*`. The `--pod-label` parameter targets pods based on a specific label, such as "app=test". If `--pod-label` is not specified, the `--name-pattern` parameter, which defaults to `.*`, is used as a regex pattern to match pods within the specified `--namespace`.',
     "The two critical timeout parameters are `--kill-timeout` and `--expected-recovery-time`. The `--kill-timeout` parameter, defaulting to 180 seconds, specifies the maximum time to wait for the target pod(s) to be removed from the cluster. In contrast, the `--expected-recovery-time` parameter, defaulting to 120 seconds, dictates the maximum time allowed for a disrupted pod to recover. If a pod fails to recover within this `expected-recovery-time`, the entire scenario will be marked as a failure.",
     "To disrupt more than one pod, the user needs to adjust the `--disruption-count` parameter. By default, if this parameter is not explicitly set, `krknctl run pod-scenarios` will only disrupt a single pod, as its default value is 1.",
     "If no specific targeting parameters are provided, the `krknctl run pod-scenarios` execution will default to targeting pods within any namespace matching the `openshift-*` regex pattern, as specified by the `--namespace` parameter's default. Furthermore, within these namespaces, it will match any pod name due to the `--name-pattern` defaulting to `.*` when `--pod-label` is not specified.",
@@ -97,8 +98,8 @@ reference_answers = [
     "The 'OpenShift System Pods' scenario targets random pods running across various OpenShift system namespaces, providing a broader, less specific disruption. In contrast, component-specific scenarios like 'Etcd' or 'Prometheus' precisely target replicas of those named components, focusing disruption on a particular service.",
     "The `id` field, serves as a unique identifier for a specific chaos scenario defined within the Krkn configuration file. It provides a distinct name for the scenario being executed.",
     "By default, the `kill-pods` scenario is restricted to the `kube-system` namespace through the `namespace_pattern: ^kube-system$` setting. However, this setting can be modified to target pods in other namespaces if desired.",
-    "Within the `kraken` configuration block, chaos scenarios are organized under the `chaos_scenarios` key. This key contains a list, where each item is a `pod_disruption_scenarios` entry, which in turn specifies the `path/to/scenario.yaml` file containing the detailed configuration for a particular pod disruption."
-  ]
+    "Within the `kraken` configuration block, chaos scenarios are organized under the `chaos_scenarios` key. This key contains a list, where each item is a `pod_disruption_scenarios` entry, which in turn specifies the `path/to/scenario.yaml` file containing the detailed configuration for a particular pod disruption.",
+]
 
 evaluation_data = []
 duration_seconds = []
@@ -110,23 +111,24 @@ for i, q in enumerate(questions):
     duration = end_time - start_time
 
     retrieved_context = [doc.page_content for doc in result["context"]]
-    
-    if i < len(reference_answers):
-        evaluation_data.append({
-            "user_input": q,
-            "generated_answer": result["answer"],
-            "retrieved_context": retrieved_context,
-            "reference_answer": reference_answers[i],
+
     if i < len(reference_answers):
         duration_seconds.append(duration)
-            "duration_seconds": duration      #not a part of the json structure but useful metrics to have
-        })
+        evaluation_data.append(
+            {
+                "user_input": q,
+                "generated_answer": result["answer"],
+                "retrieved_context": retrieved_context,
+                "reference_answer": reference_answers[i],
+                "duration_seconds": duration,  # not a part of the json structure but useful metrics to have
+            }
+        )
 
 
 output = {
     "items": evaluation_data,
-    "email": "user_email@example.com", 
-    "duration": duration_seconds
+    "email": "user_email@example.com",
+    "duration": duration_seconds,
 }
 
 # Save to file
