@@ -1,0 +1,42 @@
+name: Run Main Script
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Install expect for interactive automation
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y expect
+    
+    - name: Run main.py with automated interaction
+      run: |
+        expect << "EOD"
+        set timeout 60
+        spawn python main.py
+        expect "Ask a question"
+        send "what is krkn?\r"
+        expect "Ask a question"
+        send "exit\r"
+        EOD
+        exit $?
+      timeout-minutes: 5
