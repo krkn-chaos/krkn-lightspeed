@@ -15,5 +15,5 @@ tqdm
 torch
 streamlit
 pypdf
-numpy==1.26.2
+numpy==2.2.6
 unstructured[md]

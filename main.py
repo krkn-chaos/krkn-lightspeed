@@ -1,12 +1,13 @@
 from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
 from utils.state_graph import run_question_loop
 
+from utils.document_loader import docs_list
 # UNCOMMENT THE CODE FOR THE MODEL THAT YOU ARE NOT USING BEFORE RUNNING
 
-
+urls= docs_list()
 # START OF LLAMA 3.1 MODEL LOGIC
 # llama 3.1
-graph = load_llama31_rag_pipeline()
+graph = load_llama31_rag_pipeline(urls)
 
 # run in a loop
 run_question_loop(graph)
