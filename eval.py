@@ -2,6 +2,7 @@
 
 import json
 import time
+from utils.document_loader import docs_list
 
 from rag_pipelines.llama27_rag_pipeline import load_llama27_rag_pipeline
 from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
