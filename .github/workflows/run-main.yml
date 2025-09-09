@@ -27,9 +27,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y expect
-        curl -fsSL https://ollama.com/install.sh | sh
-        ollama serve &&
-        ollama run llama3.1 &&
     
     - name: Run main.py with automated interaction
       run: |
