@@ -26,7 +26,7 @@ graph = load_llama27_rag_pipeline()
 
 
 # 30 questions
-questions = [ 
+questions = [
     "What is the primary objective of the 'Pod Scenarios' feature within Krkn-hub on a Kubernetes/OpenShift cluster?",
     "How can Cerberus be integrated with Krkn-hub's pod scenarios to monitor the cluster and determine the success or failure of a chaos injection?",
     "What is the standard Podman command structure for initiating a pod disruption scenario with Krkn-hub, including how to provide the kube config and enable host environment variables?",
@@ -63,7 +63,7 @@ questions = [
     "Can the `kill-pods` scenario be configured to disrupt pods outside of the `kube-system` namespace?",
     "Describe the hierarchical structure for defining chaos scenarios within the top-level `kraken` configuration block.",
 ]
-reference_answers = [ 
+reference_answers = [
     "The primary objective of the 'Pod Scenarios' feature in Krkn-hub is to disrupt pods that match a specified label within a designated namespace on either a Kubernetes or OpenShift cluster, simulating chaos conditions.",
     "To integrate Cerberus, it must be started before injecting chaos. For the chaos injection container to auto-connect with Cerberus and enable monitoring for pass/fail evaluation, the `CERBERUS_ENABLED` environment variable must be set.",
     "The standard Podman command is `podman run --name=<container_name> --net=host --env-host=true -v <path-to-kube-config>:/home/krkn/.kube/config:Z -d containers.krkn-chaos.dev/krkn-chaos/krkn-hub:pod-scenarios`. This command runs the scenario container, mounts the kube config, and uses `--env-host=true` to allow the container to access host environment variables.",
