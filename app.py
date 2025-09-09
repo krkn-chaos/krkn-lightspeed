@@ -1,6 +1,7 @@
 import streamlit as st
 
 from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
+from utils.document_loader import docs_list
 
 # from granite_rag_pipeline import load_granite_rag_pipline
 
@@ -18,7 +19,8 @@ if "messages" not in st.session_state:
 
 @st.cache_resource
 def get_graph():
-    return load_llama31_rag_pipeline()
+    urls = docs_list()
+    return load_llama31_rag_pipeline(urls)
     # return load_granite_rag_pipeline()
 
 
