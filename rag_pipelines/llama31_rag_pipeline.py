@@ -1,10 +1,11 @@
+# Modified by Claude Sonnet 4 
 from langchain import hub
-from langchain_community.llms import Ollama
 
 from utils.build_collections import load_or_create_chroma_collection
 from utils.document_loader import clone_locally
 from utils.embedding_config import get_chunking_config, get_embedding_model
 from utils.state_graph import build_state_graph
+from utils.llm_factory import create_llm_backend
 
 """
 Code from langchain's Build a RAG App documentation
@@ -19,6 +20,7 @@ def load_llama31_rag_pipeline(
     persist_dir="chroma_db",
     embedding_model="qwen-small",
     chunking_strategy="default",
+    llm_backend="ollama",
 ):
     """# NOQA
     Load the Llama 3.1 RAG pipeline with ChromaDB persistence
@@ -57,8 +59,8 @@ def load_llama31_rag_pipeline(
     print("Loading RAG prompt template...")
     prompt = hub.pull("rlm/rag-prompt")
 
-    print("Initializing Ollama LLM...")
-    llm = Ollama(model="llama3.1", base_url="http://127.0.0.1:11434")
+    print(f"Initializing {llm_backend} LLM...")
+    llm = create_llm_backend(llm_backend)
 
     print("Building state graph...")
     graph = build_state_graph(vector_store, prompt, llm)

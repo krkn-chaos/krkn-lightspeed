@@ -17,3 +17,6 @@ streamlit
 pypdf
 numpy==2.2.6
 unstructured[md]
+fastapi
+uvicorn[standard]
+pydantic
