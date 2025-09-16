@@ -9,6 +9,7 @@ from langchain_chroma import Chroma
 def load_or_create_chroma_collection(
     collection_name, embedding_model, all_splits, persist_dir="chroma_db"
 ):
+
     client = chromadb.PersistentClient(path=persist_dir)
 
     collection = client.get_or_create_collection(name=collection_name)
@@ -27,20 +28,48 @@ def load_or_create_chroma_collection(
     )
 
     if existing_count == 0 and all_splits:
+        add_docs_collection(all_splits, vector_store)
+    elif existing_count > 0:
+        if existing_count != len(all_splits):
+            print(
+                "Existing chroma collection doesn't match length of documents"
+            )
+            print("Deleting chroma collection and recreating")
+            delete_chroma_collection(collection_name, persist_dir)
+            client = chromadb.PersistentClient(path=persist_dir)
+
+            collection = client.get_or_create_collection(name=collection_name)
+
+            vector_store = Chroma(
+                client=client,
+                collection_name=collection_name,
+                embedding_function=embedding_model,
+            )
+            add_docs_collection(all_splits, vector_store)
+
+        else:
+            print(
+                f"Collection already contains {existing_count} documents. "
+                "Skipping document addition."
+            )
+    else:
+        print("No documents provided to add to collection.")
+
+    return vector_store
+
+
+def add_docs_collection(all_splits, vector_store):
+    """Create a ChromaDB collection and its persistent data"""
+    try:
         print(f"Adding {len(all_splits)} documents to ChromaDB collection...")
         uuids = [str(uuid4()) for _ in range(len(all_splits))]
 
         vector_store.add_documents(documents=all_splits, ids=uuids)
         print(f"Successfully added {len(all_splits)} documents to collection.")
-    elif existing_count > 0:
-        print(
-            f"Collection already contains {existing_count} documents. "
-            "Skipping document addition."
-        )
-    else:
-        print("No documents provided to add to collection.")
-
-    return vector_store
+        return vector_store
+    except Exception as e:
+        print(f"Error adding documents to collection: {e}")
+        return False
 
 
 def delete_chroma_collection(collection_name, persist_dir="chroma_db"):

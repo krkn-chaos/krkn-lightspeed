@@ -10,6 +10,27 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # Assisted by Claude Sonnet 4
 
 
+def docs_list():
+    urls = [
+        "https://krkn-chaos.dev/docs/",
+        "https://krkn-chaos.dev/docs/krkn/",
+        "https://krkn-chaos.dev/docs/krkn-hub/",
+        "https://krkn-chaos.dev/docs/krknctl/",
+        "https://krkn-chaos.dev/docs/installation/krkn/",
+        "https://krkn-chaos.dev/docs/installation/krkn-hub/",
+        "https://krkn-chaos.dev/docs/installation/krknctl/",
+        "https://krkn-chaos.dev/docs/scenarios/cloud_setup/",
+        "https://krkn-chaos.dev/docs/scenarios/",
+        "https://krkn-chaos.dev/docs/getting-started/use-cases/",
+        "https://krkn-chaos.dev/docs/getting-started/",
+        "https://krkn-chaos.dev/docs/chaos-recommender/",
+        "https://krkn-chaos.dev/docs/getting-started/getting-started-krkn/",
+        "https://krkn-chaos.dev/docs/scenarios/pod-network-scenario/pod-network-chaos-krkn-hub/",  # NOQA
+        "https://krkn-chaos.dev/docs/developers-guide/" "data",
+    ]
+    return urls
+
+
 def load_and_split_docs(
     folder_path="data",
     supported_extensions=None,

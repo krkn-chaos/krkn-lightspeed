@@ -1,14 +1,10 @@
 from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
+from utils.document_loader import docs_list
 from utils.state_graph import run_question_loop
 
 # UNCOMMENT THE CODE FOR THE MODEL THAT YOU ARE NOT USING BEFORE RUNNING
 
-urls = [
-    "https://krkn-chaos.dev/docs/",
-    "https://krkn-chaos.dev/docs/krkn/",
-    "https://krkn-chaos.dev/docs/krkn-hub/",
-    "data",
-]
+urls = docs_list()
 # START OF LLAMA 3.1 MODEL LOGIC
 # llama 3.1
 graph = load_llama31_rag_pipeline(urls)
