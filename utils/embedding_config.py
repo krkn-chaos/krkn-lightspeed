@@ -2,6 +2,9 @@
 Embedding model configuration and utilities
 """
 
+
+# Created by Claude Sonnet 4
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from typing import Dict, Any
 

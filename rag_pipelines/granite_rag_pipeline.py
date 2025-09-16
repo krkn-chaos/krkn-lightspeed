@@ -7,7 +7,7 @@ from langgraph.graph import START, StateGraph
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing_extensions import List, TypedDict
 
-from utils.pdf_loader import load_and_split_pdfs
+from utils.document_loader import load_and_split
 
 """
 Code from langchain's Build a RAG App documentation
@@ -17,13 +17,13 @@ https://python.langchain.com/docs/tutorials/rag/
 
 def load_granite_rag_pipline():
     # load and chunk contents of thepytohnPDF
-    pdf_paths = [
-        "data/pod_scenarios.pdf",
-        "data/Pod-Scenarios-using-Krknctl.pdf",
-        "data/Pod-Scenarios-using-Krkn-hub.pdf",
-        "data/Pod-Scenarios-using-Krkn.pdf",
+    urls = [
+        "https://krkn-chaos.dev/docs/",
+        "https://krkn-chaos.dev/docs/krkn/",
+        "https://krkn-chaos.dev/docs/krkn-hub/",
+        "data",
     ]
-    all_splits = load_and_split_pdfs(pdf_paths)
+    all_splits = load_and_split(urls)
 
     # embed and store in vector database
     embedding_model = HuggingFaceEmbeddings(
