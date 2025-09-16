@@ -32,16 +32,36 @@ def create_llm_backend(backend_type="ollama", **kwargs):
         if callback_manager is None and kwargs.get("streaming", False):
             callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         
+        # GPU detection for llama.cpp
+        n_gpu_layers = kwargs.get("n_gpu_layers")
+        if n_gpu_layers is None:
+            # Auto-detect GPU availability
+            use_gpu = os.getenv("USE_GPU", "true").lower() == "true"
+            if use_gpu:
+                # Check for different GPU types
+                if os.path.exists('/dev/nvidia0') or os.path.exists('/dev/nvidiactl'):
+                    print("NVIDIA GPU detected - using all GPU layers")
+                    n_gpu_layers = -1  # Use all layers
+                elif os.path.exists('/dev/dri/card0') or os.path.exists('/dev/dri/renderD128'):
+                    print("DRI GPU detected - using all GPU layers")
+                    n_gpu_layers = -1  # Use all layers
+                else:
+                    print("No GPU detected - using CPU only")
+                    n_gpu_layers = 0
+            else:
+                print("GPU disabled by USE_GPU=false")
+                n_gpu_layers = 0
+        
         return LlamaCpp(
             model_path=model_path,
             n_ctx=kwargs.get("n_ctx", 4096),
             n_batch=kwargs.get("n_batch", 512),
             n_threads=kwargs.get("n_threads"),
-            n_gpu_layers=kwargs.get("n_gpu_layers", -1 if os.getenv("USE_GPU", "true").lower() == "true" else 0),
+            n_gpu_layers=n_gpu_layers,
             temperature=kwargs.get("temperature", 0.7),
             max_tokens=kwargs.get("max_tokens", 512),
             top_p=kwargs.get("top_p", 0.95),
-            verbose=kwargs.get("verbose", False),
+            verbose=kwargs.get("verbose", True),  # Enable verbose for container debugging
             callback_manager=callback_manager
         )
     
