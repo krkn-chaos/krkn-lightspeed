@@ -2,7 +2,7 @@ from langchain import hub
 from langchain_community.llms import Ollama
 
 from utils.build_collections import load_or_create_chroma_collection
-from utils.document_loader import load_and_split
+from utils.document_loader import clone_locally
 from utils.embedding_config import get_chunking_config, get_embedding_model
 from utils.state_graph import build_state_graph
 
@@ -13,7 +13,8 @@ https://python.langchain.com/docs/tutorials/rag/
 
 
 def load_llama27_rag_pipeline(
-    data_path=["data"],
+    github_repo="https://github.com/krkn-chaos/website",
+    repo_path="content/en/docs",
     collection_name="krkn-docs",
     persist_dir="chroma_db",
     embedding_model="qwen-small",
@@ -33,7 +34,7 @@ def load_llama27_rag_pipeline(
 
     chunking_config = get_chunking_config(chunking_strategy)
     embedding_model_instance = get_embedding_model(embedding_model)
-    all_splits = load_and_split(data_path, chunking_config)
+    all_splits = clone_locally(github_repo, repo_path, chunking_config)
     print(f"Setting up ChromaDB collection: {collection_name}")
     vector_store = load_or_create_chroma_collection(
         collection_name=collection_name,
