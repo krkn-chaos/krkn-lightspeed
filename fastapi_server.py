@@ -45,8 +45,12 @@ async def lifespan(app: FastAPI):
         # Use the same pipeline logic with llama.cpp backend
         rag_pipeline = load_llama31_rag_pipeline(llm_backend="llamacpp")
         logger.info("RAG pipeline loaded successfully")
+        logger.info("FastAPI service ready to accept requests")
     except Exception as e:
         logger.error(f"Failed to load RAG pipeline: {e}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
     
     yield
