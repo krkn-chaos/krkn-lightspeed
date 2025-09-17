@@ -11,6 +11,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Assisted by Claude Sonnet 4
 
+# Setup debug logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def docs_list():
     urls = [
