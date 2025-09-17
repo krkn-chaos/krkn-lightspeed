@@ -6,3 +6,4 @@ chroma_db/*
 granite.py
 */__pycache__/
 *.json
+.idea

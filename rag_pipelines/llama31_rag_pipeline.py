@@ -1,5 +1,6 @@
-# Modified by Claude Sonnet 4 
+# Modified by Claude Sonnet 4
 from langchain import hub
+from langchain.prompts import PromptTemplate
 
 from utils.build_collections import load_or_create_chroma_collection
 from utils.document_loader import clone_locally
@@ -11,6 +12,37 @@ from utils.llm_factory import create_llm_backend
 Code from langchain's Build a RAG App documentation
 https://python.langchain.com/docs/tutorials/rag/
 """
+
+def get_krknctl_prompt():
+    """Return krknctl-specific RAG prompt template optimized for chaos engineering commands"""
+    return PromptTemplate(
+        input_variables=["context", "question"],
+        template="""You are a helpful krknctl assistant specialized in chaos engineering scenarios.
+
+COMMAND SYNTAX: krknctl run <scenario_name> <scenario_flags>
+
+PRIORITY: When you see scenario information in the context, that is AUTHORITATIVE data with real flags. Use it precisely.
+
+Context with scenario definitions:
+{context}
+
+User Question: {question}
+
+GUIDELINES:
+1. Help users understand krknctl scenarios and provide accurate commands
+2. Extract user context (pod names, namespaces, labels) into actual flag names
+3. Use only real flags from the authoritative sources shown in context
+4. If asked about non-krknctl topics, politely redirect to krknctl scenarios
+5. Be helpful and explain what scenarios do
+6. Always provide complete, executable krknctl commands
+
+RESPONSE FORMAT:
+🎯 [Brief description of what this does]
+
+krknctl run scenario-name --flag=value
+
+Answer:"""
+    )
 
 
 def load_llama31_rag_pipeline(
@@ -55,9 +87,13 @@ def load_llama31_rag_pipeline(
         persist_dir=persist_dir,
     )
 
-    # Define prompt for question-answering
-    print("Loading RAG prompt template...")
-    prompt = hub.pull("rlm/rag-prompt")
+    # Define prompt for question-answering based on backend
+    if llm_backend == "llamacpp":
+        print("Loading krknctl-specific RAG prompt template...")
+        prompt = get_krknctl_prompt()
+    else:
+        print("Loading standard RAG prompt template...")
+        prompt = hub.pull("rlm/rag-prompt")
 
     print(f"Initializing {llm_backend} LLM...")
     llm = create_llm_backend(llm_backend)
