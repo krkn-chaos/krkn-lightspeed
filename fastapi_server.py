@@ -42,8 +42,11 @@ async def lifespan(app: FastAPI):
     logger.info("Loading RAG pipeline with llama.cpp backend...")
     
     try:
-        # Use the same pipeline logic with llama.cpp backend
-        rag_pipeline = load_llama31_rag_pipeline(llm_backend="llamacpp")
+        # Use the same pipeline logic with llama.cpp backend and correct persist_dir
+        rag_pipeline = load_llama31_rag_pipeline(
+            llm_backend="llamacpp",
+            persist_dir="/app/docs_index"
+        )
         logger.info("RAG pipeline loaded successfully")
         logger.info("FastAPI service ready to accept requests")
     except Exception as e:
