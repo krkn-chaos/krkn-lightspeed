@@ -89,6 +89,90 @@ app = FastAPI(
 async def root():
     return {"message": "KRKN Lightspeed API is running"}
 
+@app.get("/debug/documents")
+async def debug_documents():
+    """Debug endpoint to inspect ChromaDB documents"""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not loaded")
+
+    try:
+        # Get the vector store from the pipeline
+        vector_store = None
+
+        # Try to access the vector store from the RAG pipeline state graph
+        if hasattr(rag_pipeline, 'get_state') or hasattr(rag_pipeline, 'nodes'):
+            # This is a StateGraph, we need to find the vector store
+            logger.info("Attempting to access vector store from state graph...")
+            # For now, let's create a direct connection to ChromaDB
+
+        # Direct ChromaDB connection for debugging
+        import chromadb
+        client = chromadb.PersistentClient(path="/app/docs_index")
+        collections = client.list_collections()
+
+        result = {
+            "collections": [],
+            "total_documents": 0
+        }
+
+        for collection in collections:
+            collection_info = {
+                "name": collection.name,
+                "count": collection.count(),
+                "metadata": collection.metadata if hasattr(collection, 'metadata') else None,
+                "sample_documents": []
+            }
+
+            # Get sample documents
+            if collection.count() > 0:
+                sample_results = collection.get(limit=5, include=['documents', 'metadatas'])
+                for i, doc in enumerate(sample_results.get('documents', [])):
+                    metadata = sample_results.get('metadatas', [{}])[i] if sample_results.get('metadatas') else {}
+                    collection_info["sample_documents"].append({
+                        "content_preview": doc[:200] + "..." if len(doc) > 200 else doc,
+                        "metadata": metadata
+                    })
+
+            result["collections"].append(collection_info)
+            result["total_documents"] += collection.count()
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error inspecting documents: {e}")
+        raise HTTPException(status_code=500, detail=f"Error inspecting documents: {str(e)}")
+
+@app.get("/debug/document_sources")
+async def debug_document_sources():
+    """Debug endpoint to see document sources breakdown"""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not loaded")
+
+    try:
+        import chromadb
+        client = chromadb.PersistentClient(path="/app/docs_index")
+        collection = client.get_collection("krkn-docs")
+
+        # Get all documents with metadata
+        all_results = collection.get(include=['metadatas'])
+        metadatas = all_results.get('metadatas', [])
+
+        # Analyze sources
+        sources = {}
+        for metadata in metadatas:
+            source = metadata.get('source', 'unknown') if metadata else 'unknown'
+            sources[source] = sources.get(source, 0) + 1
+
+        return {
+            "total_documents": len(metadatas),
+            "sources_breakdown": sources,
+            "sample_metadata": metadatas[:10] if metadatas else []
+        }
+
+    except Exception as e:
+        logger.error(f"Error analyzing document sources: {e}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing document sources: {str(e)}")
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "rag_pipeline_loaded": rag_pipeline is not None}
