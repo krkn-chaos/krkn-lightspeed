@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 
 import chromadb
@@ -27,31 +28,29 @@ def load_or_create_chroma_collection(
         f"'{collection_name}': {existing_count}"
     )
 
+    # Check if NO_CACHE environment variable is set
+    no_cache = os.environ.get('NO_CACHE', '').lower() in ('true', '1', 'yes')
+
     if existing_count == 0 and all_splits:
+        print("Collection is empty, adding documents...")
         add_docs_collection(all_splits, vector_store)
-    elif existing_count > 0:
-        if existing_count != len(all_splits):
-            print(
-                "Existing chroma collection doesn't match length of documents"
-            )
-            print("Deleting chroma collection and recreating")
+    elif no_cache and all_splits:
+        print("NO_CACHE environment variable set, rebuilding collection...")
+        if existing_count > 0:
             delete_chroma_collection(collection_name, persist_dir)
             client = chromadb.PersistentClient(path=persist_dir)
-
             collection = client.get_or_create_collection(name=collection_name)
-
             vector_store = Chroma(
                 client=client,
                 collection_name=collection_name,
                 embedding_function=embedding_model,
             )
-            add_docs_collection(all_splits, vector_store)
-
-        else:
-            print(
-                f"Collection already contains {existing_count} documents. "
-                "Skipping document addition."
-            )
+        add_docs_collection(all_splits, vector_store)
+    elif existing_count > 0:
+        # Debug: check if we have new documents to add
+        new_docs_count = len(all_splits) if all_splits else 0
+        print(f"DEBUG: Existing documents: {existing_count}, New documents to add: {new_docs_count}")
+        print(f"Collection already contains {existing_count} documents. Using existing collection.")
     else:
         print("No documents provided to add to collection.")
 

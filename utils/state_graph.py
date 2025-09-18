@@ -1,9 +1,14 @@
 import re
 import time
+import logging
 
 from langchain_core.documents import Document
 from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
+
+# Setup debug logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def build_state_graph(vector_store, prompt, llm):
@@ -25,10 +30,34 @@ def build_state_graph(vector_store, prompt, llm):
         docs_content = "\n\n".join(
             doc.page_content for doc in state["context"]
         )
+
+        # Debug log context preparation
+        logger.info(f"🧠 DEBUG: Preparing context from {len(state['context'])} documents")
+        logger.info(f"📝 DEBUG: Total context length: {len(docs_content)} characters")
+
+        # Show a preview of the context being sent to LLM
+        context_preview = docs_content[:500].replace('\n', ' ')
+        logger.info(f"📜 DEBUG: Context preview: {context_preview}...")
+
         messages = prompt.invoke(
             {"question": state["question"], "context": docs_content}
         )
+
+        # Debug log prompt preparation
+        if hasattr(messages, 'content'):
+            prompt_preview = str(messages.content)[:300].replace('\n', ' ')
+            logger.info(f"📝 DEBUG: Prompt preview: {prompt_preview}...")
+        elif isinstance(messages, list) and messages:
+            prompt_preview = str(messages[0])[:300].replace('\n', ' ') if messages else "Empty"
+            logger.info(f"📝 DEBUG: Prompt preview: {prompt_preview}...")
+
+        logger.info(f"🤖 DEBUG: Invoking LLM for generation...")
         response = llm.invoke(messages)
+
+        # Debug log response
+        response_preview = str(response)[:200].replace('\n', ' ')
+        logger.info(f"✨ DEBUG: LLM response preview: {response_preview}...")
+
         return {"answer": response}
 
     # Compile the graph
@@ -44,12 +73,15 @@ def run_question_loop(graph):
         q = input("Ask a question (or type 'exit'): ")
         if q.lower() in ["exit", "quit"]:
             break
+        logger.info(f"🚀 DEBUG: Starting question processing: '{q}'")
         start_time = time.time()
         result = graph.invoke({"question": q})
         end_time = time.time()
         duration = end_time - start_time
 
         print("Time taken:", round(duration, 2), "seconds")
+        logger.info(f"⏱️ DEBUG: Question processed in {duration:.2f} seconds")
+        logger.info(f"🏁 DEBUG: Retrieved {len(result.get('context', []))} documents for context")
 
         print("\nAnswer:", result["answer"])
 
