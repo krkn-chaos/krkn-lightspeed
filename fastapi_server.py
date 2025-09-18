@@ -6,6 +6,8 @@ import uvicorn
 from contextlib import asynccontextmanager
 import os
 import logging
+import subprocess
+import re
 from rag_pipelines.llama31_rag_pipeline import load_llama31_rag_pipeline
 
 # Configure logging
@@ -14,6 +16,18 @@ logger = logging.getLogger(__name__)
 
 # Global RAG pipeline instance
 rag_pipeline = None
+
+def extract_scenario_name(response_text: str) -> Optional[str]:
+    """Extract scenario name from model response"""
+    # Only look for explicit SCENARIO: pattern
+    scenario_match = re.search(r'SCENARIO:\s*([a-zA-Z0-9_-]+)', response_text)
+    if scenario_match:
+        scenario_name = scenario_match.group(1)
+        logger.info(f"✅ Scenario detected: {scenario_name}")
+        return scenario_name
+
+    logger.warning("⚠️ Scenario not found in the response - model did not follow SCENARIO: format")
+    return None
 
 class ChatMessage(BaseModel):
     role: str
@@ -33,6 +47,7 @@ class ChatCompletionResponse(BaseModel):
     model: str
     choices: List[Dict[str, Any]]
     usage: Dict[str, int]
+    scenario_name: Optional[str] = None  # krknctl scenario name if detected
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -98,7 +113,12 @@ async def chat_completions(request: ChatCompletionRequest):
         # Use the RAG pipeline to generate response
         result = rag_pipeline.invoke({"question": user_question})
         response_text = result.get("answer", "").strip()
-        
+
+        # Extract scenario name from response
+        scenario_name = extract_scenario_name(response_text)
+        if scenario_name:
+            logger.info(f"Detected scenario: {scenario_name}")
+
         # Format response in OpenAI format
         return ChatCompletionResponse(
             id=f"chatcmpl-{hash(user_question) % 10000000}",
@@ -116,7 +136,8 @@ async def chat_completions(request: ChatCompletionRequest):
                 "prompt_tokens": len(user_question.split()),
                 "completion_tokens": len(response_text.split()),
                 "total_tokens": len(user_question.split()) + len(response_text.split())
-            }
+            },
+            scenario_name=scenario_name
         )
     
     except Exception as e:
