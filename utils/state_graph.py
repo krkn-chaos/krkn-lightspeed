@@ -21,9 +21,18 @@ def build_state_graph(vector_store, prompt, llm):
 
     # Define application steps
     def retrieve(state: State):
+        # Retrieve more documents for better context coverage
         retrieved_docs = vector_store.similarity_search(
-            state["question"], k=1
+            state["question"], k=3
         )
+
+        # Log retrieval details for debugging
+        logger.info(f"🔍 DEBUG: Retrieved {len(retrieved_docs)} documents for question")
+        for i, doc in enumerate(retrieved_docs):
+            source = doc.metadata.get('source', 'unknown')
+            preview = doc.page_content[:100].replace('\n', ' ')
+            logger.info(f"   Doc {i+1}: {source} - {preview}...")
+
         return {"context": retrieved_docs}
 
     def generate(state: State):

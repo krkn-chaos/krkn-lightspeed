@@ -58,10 +58,13 @@ def create_llm_backend(backend_type="ollama", **kwargs):
             n_batch=kwargs.get("n_batch", 512),
             n_threads=kwargs.get("n_threads"),
             n_gpu_layers=n_gpu_layers,
-            temperature=kwargs.get("temperature", 0.3),  # Balanced: not too creative, not too rigid
-            max_tokens=kwargs.get("max_tokens", 200),    # Concise but enough for proper response
-            top_p=kwargs.get("top_p", 0.95),            # Back to original for better variety
-            repeat_penalty=kwargs.get("repeat_penalty", 1.05),  # Light penalty to avoid repetition
+            temperature=kwargs.get("temperature", 0.1),  # Lower for more deterministic/precise responses
+            max_tokens=kwargs.get("max_tokens", 300),    # Increased for complete responses with examples
+            top_p=kwargs.get("top_p", 0.85),            # Reduced for more focused token selection
+            repeat_penalty=kwargs.get("repeat_penalty", 1.1),  # Slightly higher to avoid repetition
+            top_k=kwargs.get("top_k", 40),              # Add top_k for better token filtering
+            mirostat=kwargs.get("mirostat", 2),         # Enable mirostat for better coherence
+            mirostat_tau=kwargs.get("mirostat_tau", 5.0),  # Target entropy for mirostat
             verbose=kwargs.get("verbose", True),  # Enable verbose for container debugging
             callback_manager=callback_manager
         )
