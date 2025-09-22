@@ -54,17 +54,16 @@ def create_llm_backend(backend_type="ollama", **kwargs):
         
         return LlamaCpp(
             model_path=model_path,
-            n_ctx=kwargs.get("n_ctx", 4096),
-            n_batch=kwargs.get("n_batch", 512),
+            n_ctx=kwargs.get("n_ctx", 2048),            # Reduced context for 1B model
+            n_batch=kwargs.get("n_batch", 256),         # Smaller batch for efficiency
             n_threads=kwargs.get("n_threads"),
             n_gpu_layers=n_gpu_layers,
-            temperature=kwargs.get("temperature", 0.1),  # Lower for more deterministic/precise responses
-            max_tokens=kwargs.get("max_tokens", 300),    # Increased for complete responses with examples
-            top_p=kwargs.get("top_p", 0.85),            # Reduced for more focused token selection
-            repeat_penalty=kwargs.get("repeat_penalty", 1.1),  # Slightly higher to avoid repetition
-            top_k=kwargs.get("top_k", 40),              # Add top_k for better token filtering
-            mirostat=kwargs.get("mirostat", 2),         # Enable mirostat for better coherence
-            mirostat_tau=kwargs.get("mirostat_tau", 5.0),  # Target entropy for mirostat
+            temperature=kwargs.get("temperature", 0.0),  # Completely deterministic for 1B model
+            max_tokens=kwargs.get("max_tokens", 150),    # Shorter responses for small model
+            top_p=kwargs.get("top_p", 0.7),             # More aggressive filtering
+            repeat_penalty=kwargs.get("repeat_penalty", 1.15),  # Higher penalty for small models
+            top_k=kwargs.get("top_k", 20),              # More restrictive top_k
+            mirostat=kwargs.get("mirostat", 0),         # Disable mirostat for simplicity
             verbose=kwargs.get("verbose", True),  # Enable verbose for container debugging
             callback_manager=callback_manager
         )
