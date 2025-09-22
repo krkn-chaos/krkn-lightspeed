@@ -21,17 +21,10 @@ def build_state_graph(vector_store, prompt, llm):
 
     # Define application steps
     def retrieve(state: State):
-        # For 1B model, use only the most relevant document and truncate it
+        # For 3B model, use 2 most relevant documents
         retrieved_docs = vector_store.similarity_search(
-            state["question"], k=1
+            state["question"], k=2
         )
-
-        # Truncate document content for small models
-        if retrieved_docs:
-            doc = retrieved_docs[0]
-            # Keep only first 800 characters to fit in small model context
-            if len(doc.page_content) > 800:
-                doc.page_content = doc.page_content[:800] + "..."
 
         # Log retrieval details for debugging
         logger.info(f"🔍 DEBUG: Retrieved {len(retrieved_docs)} documents for question")

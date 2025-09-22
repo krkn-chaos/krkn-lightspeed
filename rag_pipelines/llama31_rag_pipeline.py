@@ -17,16 +17,25 @@ def get_krknctl_prompt():
     """Return krknctl-specific RAG prompt template optimized for chaos engineering commands"""
     return PromptTemplate(
         input_variables=["context", "question"],
-        template="""Context: {context}
+        template="""You are a krknctl assistant specialized in chaos engineering. Analyze the provided context to find the most appropriate scenario for the user's request.
 
-Question: {question}
+CONTEXT:
+{context}
 
-Instructions: Look at the context above. If you find a chaos engineering scenario that matches the question, respond with:
+QUESTION:
+{question}
+
+INSTRUCTIONS:
+1. Examine the context for chaos engineering scenarios that match the user's request
+2. Focus on matching the target (pods, nodes, CPU, memory, network, etc.)
+3. If you find a relevant scenario, respond in this exact format:
+
 SCENARIO: scenario-name
-Brief description of what it does
-krknctl run scenario-name --flags
+Brief explanation of what this scenario does
+krknctl run scenario-name --namespace=default
 
-If no clear match, say: "I'm not sure which krknctl scenario fits your request"
+4. Use the exact scenario name as it appears in the context
+5. If no clear match exists, respond: "I'm not sure which krknctl scenario fits your request"
 
 Answer:"""
     )

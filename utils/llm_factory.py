@@ -25,7 +25,7 @@ def create_llm_backend(backend_type="ollama", **kwargs):
     
     elif backend_type == "llamacpp":
         # New llama.cpp backend for krknctl
-        model_path = kwargs.get("model_path") or os.getenv("MODEL_PATH", "/app/models/Llama-3.2-1B-Instruct-Q4_K_M.gguf")
+        model_path = kwargs.get("model_path") or os.getenv("MODEL_PATH", "/app/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
         
         # Optional callback manager for streaming
         callback_manager = kwargs.get("callback_manager")
@@ -54,16 +54,17 @@ def create_llm_backend(backend_type="ollama", **kwargs):
         
         return LlamaCpp(
             model_path=model_path,
-            n_ctx=kwargs.get("n_ctx", 2048),            # Reduced context for 1B model
-            n_batch=kwargs.get("n_batch", 256),         # Smaller batch for efficiency
+            n_ctx=kwargs.get("n_ctx", 4096),            # Restored context for 3B model
+            n_batch=kwargs.get("n_batch", 512),         # Larger batch for 3B model
             n_threads=kwargs.get("n_threads"),
             n_gpu_layers=n_gpu_layers,
-            temperature=kwargs.get("temperature", 0.0),  # Completely deterministic for 1B model
-            max_tokens=kwargs.get("max_tokens", 150),    # Shorter responses for small model
-            top_p=kwargs.get("top_p", 0.7),             # More aggressive filtering
-            repeat_penalty=kwargs.get("repeat_penalty", 1.15),  # Higher penalty for small models
-            top_k=kwargs.get("top_k", 20),              # More restrictive top_k
-            mirostat=kwargs.get("mirostat", 0),         # Disable mirostat for simplicity
+            temperature=kwargs.get("temperature", 0.2),  # Slightly more creative for 3B model
+            max_tokens=kwargs.get("max_tokens", 300),    # Longer responses for 3B model
+            top_p=kwargs.get("top_p", 0.9),             # Less aggressive filtering
+            repeat_penalty=kwargs.get("repeat_penalty", 1.1),  # Standard penalty
+            top_k=kwargs.get("top_k", 40),              # More options for 3B
+            mirostat=kwargs.get("mirostat", 2),         # Re-enable mirostat for coherence
+            mirostat_tau=kwargs.get("mirostat_tau", 5.0),
             verbose=kwargs.get("verbose", True),  # Enable verbose for container debugging
             callback_manager=callback_manager
         )
