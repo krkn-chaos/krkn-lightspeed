@@ -7,7 +7,7 @@ uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
 
 # AI/ML dependencies
-llama-cpp-python>=0.2.20
+# llama-cpp-python - compiled with specific GPU support in Containerfile
 sentence-transformers>=2.2.2
 faiss-cpu>=1.7.4
 numpy>=1.24.0
