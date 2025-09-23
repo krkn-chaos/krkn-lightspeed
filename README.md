@@ -3,7 +3,8 @@ This is a RAG chatbot built using LangGraph, LangChain, and either the IBM Grani
 
 Note: To ensure accurate responses based on the provided documentation, please include the keyword “krkn” or other krkn context in your questions. This helps the system retrieve relevant context from the Krkn knowledge base, rather than generating general answers from unrelated sources.
 
-## Setup Instructions
+
+# Setup Instructions
 
 ### 1. Clone the Repository
 ```bash
@@ -47,6 +48,34 @@ Ensure that ollama is running in the background
 ### UI Interface
 1. run ```streamlit run app.py ```
 
+## Steps 
+1. **Document Processing**: The system loads and processes documentation files from the `docs/` directory under github.com/krkn-chaos/website, splitting them into manageable chunks for efficient retrieval.
+    - Documents can be loaded as: 
+        1. PDF (stored in a specific folder)
+        2. Markdown files
+        3. Urls 
+
+2. **Vector Database Creation**: Document chunks are converted into embeddings using HuggingFace's sentence transformers and stored in a Chroma vector database for semantic search.
+
+3. **RAG Pipeline Setup**: A Retrieval-Augmented Generation (RAG) pipeline is established using LangGraph and LangChain, combining document retrieval with language model generation.
+
+4. **Model Integration**: The chatbot integrates with your chosen LLM (IBM Granite, LLaMA 3.1 via Ollama, or LLaMA 2) to generate contextually relevant responses.
+
+5. **Query Processing**: When you ask a question, the system:
+   - Retrieves relevant document chunks from the vector database
+   - Provides context to the language model
+   - Generates an answer based on the retrieved KRKN documentation
+   - Returns the response with source citations when available
+
+6. **Interactive Chat**: The terminal interface allows for continuous conversation, maintaining context throughout the session.
+
+
+## Roadmap
+Enhancements being planned can be found in the [roadmap](roadmap.md)
+
+# Evaluation and Performance
+
+
 ## Performance
 LLM performance improves significantly with better laptop hardware. LLM was tested on two different laptops: 
 1. **Laptop 1**: Apple M3 Pro, 36 GB RAM, 12-core CPU, 18-core GPU
@@ -54,8 +83,6 @@ LLM performance improves significantly with better laptop hardware. LLM was test
 
 Answers were generated in **under 10 seconds** on laptop 1, whereas answers were generated in **15-30 seconds** on laptop 2. (for llama 3.1 LLM)
 
-## Roadmap
-Enhancements being planned can be found in the [roadmap](roadmap.md)
 
 ## Evaluating the model
 If you want to evaluate the performance of the LLM being used to generate answers: 
