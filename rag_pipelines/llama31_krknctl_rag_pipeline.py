@@ -115,15 +115,16 @@ def load_llama31_krknctl_rag_pipeline(
         if not llama_model:
             return {"answer": "Llama model not available. Please check model path."}
 
-        # Build context from retrieved documents (sorted by relevance internally)
+        # Build context from retrieved documents with source information for model decision-making
         context_parts = []
         for i, doc in enumerate(state["context"]):
-            # Use relevance score for internal sorting but don't expose it
-            context_parts.append(doc.page_content)
+            relevance_score = doc.metadata.get('relevance_score', 0)
+            source = doc.metadata.get('source', 'unknown')
+            context_parts.append(f"[RELEVANCE: {relevance_score:.3f} | SOURCE: {source}] {doc.page_content}")
 
         docs_content = "\n\n".join(context_parts)
 
-        # Create clean, professional prompt that hides technical details
+        # Create enhanced prompt with source-based guidance
         prompt = f"""You are a chaos engineering assistant. Answer the user's question using the provided documentation context.
 
 CONTEXT:
@@ -132,13 +133,17 @@ CONTEXT:
 QUESTION: {state["question"]}
 
 INSTRUCTIONS:
-1. Use the most relevant information from the context to answer the question
-2. For krknctl command questions: provide the specific command syntax, required flags, and practical examples. If you identify a specific scenario, include "SCENARIO: scenario-name"
-3. For chaos testing theory questions: explain concepts, best practices, and methodologies clearly
-4. Give a direct, comprehensive answer without exposing technical details like relevance scores
-5. If the context doesn't contain sufficient information, state this clearly
+1. Look at the SOURCE information in the context to determine response type:
+   - If SOURCE contains "chaos-testing-guide": Provide theoretical chaos testing explanations
+   - If SOURCE contains "krkn-hub" or "scenario": Provide operational krknctl commands with "SCENARIO: scenario-name"
+   - If SOURCE contains "krknctl": Provide practical command guidance
 
-Provide a clear, professional response:"""
+2. Use documents with higher RELEVANCE scores to prioritize information
+3. For operational questions: Include specific krknctl commands, flags, and the SCENARIO tag
+4. For theoretical questions: Focus on concepts, best practices, and methodologies
+5. Give a direct, professional answer without exposing the technical metadata
+
+Answer:"""
 
         try:
             # Enhanced parameters for complete, professional responses
