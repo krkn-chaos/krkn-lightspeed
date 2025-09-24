@@ -135,11 +135,16 @@ QUESTION: {state["question"]}
 INSTRUCTIONS:
 1. Look at the SOURCE information in the context to determine response type:
    - If SOURCE contains "chaos-testing-guide": Provide theoretical chaos testing explanations
-   - If SOURCE contains "krkn-hub" or "scenario": Provide operational krknctl commands with "SCENARIO: scenario-name"
+   - If SOURCE contains "krkn-hub" or "scenario": Provide operational krknctl commands with "SCENARIO: exact-scenario-name"
    - If SOURCE contains "krknctl": Provide practical command guidance
 
 2. Use documents with higher RELEVANCE scores to prioritize information
-3. For operational questions: Include specific krknctl commands, flags, and the SCENARIO tag
+3. For operational questions:
+   - Look for "krknctl Scenario:" or "Command: krknctl run" in the documentation to find the exact scenario name
+   - Extract the EXACT scenario name as written (e.g., if you see "krknctl run zone-outages", use "zone-outages" not "zone-outage")
+   - Do not modify, abbreviate, or change the scenario name in any way
+   - Include specific krknctl commands and required flags
+   - Format: "SCENARIO: exact-scenario-name-as-documented"
 4. For theoretical questions: Focus on concepts, best practices, and methodologies
 5. Give a direct, professional answer without exposing the technical metadata
 
