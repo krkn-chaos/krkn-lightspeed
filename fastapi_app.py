@@ -92,7 +92,6 @@ async def lifespan(app: FastAPI):
         rag_pipeline = load_llama31_krknctl_rag_pipeline(
             github_repo="https://github.com/krkn-chaos/website",
             repo_path="content/en/docs",
-            collection_name="krkn-docs-faiss",
             persist_dir="faiss_index",
             model_path="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
             krkn_hub_repo="https://github.com/krkn-chaos/krkn-hub"

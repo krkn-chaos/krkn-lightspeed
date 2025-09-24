@@ -9,10 +9,6 @@ from typing_extensions import List, TypedDict
 def build_state_graph(vector_store, prompt, llm):
 
     # Define state for application
-    class State(TypedDict):
-        question: str
-        context: List[Document]
-        answer: str
 
     # Define application steps
     def retrieve(state: State):
@@ -83,3 +79,8 @@ def get_url_from_source(source):
         source = re.sub(".md", "", source)
         source = re.sub("/_index", "", source)
     return source
+
+class State(TypedDict):
+    question: str
+    context: List[Document]
+    answer: str

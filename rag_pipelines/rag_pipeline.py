@@ -8,11 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
 
-
-class State(TypedDict):
-    question: str
-    context: List[Document]
-    answer: str
+from utils.state_graph import State
 
 
 def load_rag_pipeline():

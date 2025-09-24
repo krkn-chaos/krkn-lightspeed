@@ -8,12 +8,14 @@ pydantic>=2.5.0
 
 # AI/ML dependencies
 # llama-cpp-python - compiled with specific GPU support in Containerfile
+# PyTorch - installed with platform-specific optimizations in Containerfile
 sentence-transformers>=2.2.2
 faiss-cpu>=1.7.4
 numpy>=1.24.0
 
 # Langchain (minimal - only for Document compatibility)
 langchain-core>=0.1.0
+langgraph >= 0.6.7
 typing-extensions>=4.8.0
 
 # Utilities
