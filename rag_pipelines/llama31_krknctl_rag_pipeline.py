@@ -115,18 +115,16 @@ def load_llama31_krknctl_rag_pipeline(
         if not llama_model:
             return {"answer": "Llama model not available. Please check model path."}
 
-        # Build context from retrieved documents with visible relevance scores
+        # Build context from retrieved documents (sorted by relevance internally)
         context_parts = []
         for i, doc in enumerate(state["context"]):
-            relevance_score = doc.metadata.get('relevance_score', 0)
-            context_parts.append(f"[RELEVANCE SCORE: {relevance_score:.3f}] {doc.page_content}")
+            # Use relevance score for internal sorting but don't expose it
+            context_parts.append(doc.page_content)
 
         docs_content = "\n\n".join(context_parts)
 
-        # Create enhanced prompt for both krknctl scenarios and chaos testing theory
-        prompt = f"""You are a chaos engineering assistant specializing in krknctl and chaos testing theory. Answer the user's question using ONLY the provided context.
-
-The context below contains documents with RELEVANCE SCORES. Higher scores (closer to 1.0) mean the document is more relevant to the question. Use this to prioritize your answer.
+        # Create clean, professional prompt that hides technical details
+        prompt = f"""You are a chaos engineering assistant. Answer the user's question using the provided documentation context.
 
 CONTEXT:
 {docs_content}
@@ -134,34 +132,22 @@ CONTEXT:
 QUESTION: {state["question"]}
 
 INSTRUCTIONS:
-1. Look at the relevance scores and prioritize higher-scoring documents
-2. Determine if this is a practical krknctl question or a theoretical chaos testing question:
+1. Use the most relevant information from the context to answer the question
+2. For krknctl command questions: provide the specific command syntax, required flags, and practical examples. If you identify a specific scenario, include "SCENARIO: scenario-name"
+3. For chaos testing theory questions: explain concepts, best practices, and methodologies clearly
+4. Give a direct, comprehensive answer without exposing technical details like relevance scores
+5. If the context doesn't contain sufficient information, state this clearly
 
-   FOR KRKNCTL QUESTIONS (asking about commands, scenarios, flags):
-   - Find the krknctl scenario that best matches the question
-   - If you find a scenario name, include: SCENARIO: exact-scenario-name
-   - Provide the specific krknctl command with required flags
-   - Include practical usage examples
-
-   FOR THEORETICAL CHAOS TESTING QUESTIONS (asking about concepts, best practices, methodology):
-   - Focus on chaos testing principles, strategies, and best practices
-   - Reference relevant sections from the chaos testing guide
-   - Explain concepts clearly with context from the documentation
-   - Connect theory to practical applications when possible
-
-3. Base your answer entirely on the provided context - do not add information not present in the documents
-4. If the context doesn't contain sufficient information, say so clearly
-
-Answer:"""
+Provide a clear, professional response:"""
 
         try:
-            # Enhanced parameters for both practical and theoretical responses
+            # Enhanced parameters for complete, professional responses
             response = llama_model(
                 prompt,
-                max_tokens=450,   # More space for theoretical explanations
-                temperature=0.15, # Low but allows some reasoning
-                top_p=0.8,        # Moderate sampling
-                repeat_penalty=1.1,
+                max_tokens=600,   # Sufficient space for complete answers
+                temperature=0.1,  # Very focused and consistent
+                top_p=0.9,        # High quality sampling
+                repeat_penalty=1.15,
                 echo=False
             )
 
