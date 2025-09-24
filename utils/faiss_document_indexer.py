@@ -28,12 +28,85 @@ class FaissDocumentIndexer:
 
         try:
             docs = self._clone_and_extract_docs(github_repo, repo_path)
+
+            # Add chaos testing guide with specific chunking strategy
+            chaos_guide = self._fetch_chaos_testing_guide(github_repo)
+            if chaos_guide:
+                docs.append(chaos_guide)
+
             logger.info(f"Found {len(docs)} documents from GitHub repository")
 
         except Exception as e:
             logger.error(f"Error during GitHub repository cloning: {e}")
 
         return docs
+
+    def _fetch_chaos_testing_guide(self, repo_url: str) -> Dict[str, Any]:
+        """Fetch the chaos testing guide specifically and set it up for heading-based chunking"""
+        guide_path = "content/en/docs/chaos-testing-guide/_index.md"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            try:
+                # Clone repository using shared method
+                self._clone_repository(repo_url, temp_dir)
+
+                # Read the chaos testing guide file
+                guide_file = os.path.join(temp_dir, guide_path)
+                if os.path.exists(guide_file):
+                    with open(guide_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    # Parse frontmatter to get title
+                    title = "Chaos Testing Guide"
+                    if content.startswith('---'):
+                        try:
+                            parts = content.split('---', 2)
+                            if len(parts) >= 3:
+                                frontmatter = parts[1]
+                                content_body = parts[2].strip()
+
+                                # Extract title from frontmatter
+                                for line in frontmatter.split('\n'):
+                                    if line.strip().startswith('title:'):
+                                        title = line.split(':', 1)[1].strip().strip('"\'')
+                                        break
+
+                                content = content_body
+                        except:
+                            pass
+
+                    return {
+                        "url": "https://krkn-chaos.dev/docs/chaos-testing-guide/",
+                        "title": title,
+                        "content": content,
+                        "source": guide_path,
+                        "github_url": f"https://github.com/krkn-chaos/website/blob/main/{guide_path}",
+                        "path": guide_path,
+                        "chunking_strategy": "heading",
+                        "heading_level": "###"
+                    }
+                else:
+                    logger.warning(f"Chaos testing guide not found at {guide_path}")
+
+            except Exception as e:
+                logger.error(f"Failed to fetch chaos testing guide: {e}")
+
+        return None
+
+    def _clone_repository(self, repo_url: str, temp_dir: str) -> str:
+        """Clone repository to directory and return the path"""
+        try:
+            logger.info(f"Cloning repository: {repo_url}")
+            subprocess.run([
+                'git', 'clone', '--depth', '1', '--quiet', repo_url, temp_dir
+            ], check=True, capture_output=True, text=True)
+
+            logger.info(f"Repository cloned to: {temp_dir}")
+            return temp_dir
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to clone repository {repo_url}: {e.stderr}")
+            raise
 
     def scrape_krkn_hub_scenarios(self, github_repo: str) -> List[Dict[str, Any]]:
         """Fetch krknctl-input.json files from krkn-hub repository"""
@@ -54,10 +127,8 @@ class FaissDocumentIndexer:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
-                logger.info(f"Cloning repository: {repo_url}")
-                result = subprocess.run([
-                    'git', 'clone', '--depth', '1', '--quiet', repo_url, temp_dir
-                ], check=True, capture_output=True, text=True)
+                # Clone repository using shared method
+                self._clone_repository(repo_url, temp_dir)
 
                 full_docs_path = os.path.join(temp_dir, docs_path)
 
@@ -67,9 +138,6 @@ class FaissDocumentIndexer:
 
                 docs = self._extract_markdown_files(full_docs_path, docs_path)
 
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to clone repository: {e.stderr}")
-                raise
             except Exception as e:
                 logger.error(f"Error processing cloned repository: {e}")
                 raise
@@ -82,16 +150,11 @@ class FaissDocumentIndexer:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
-                logger.info(f"Cloning krkn-hub repository: {repo_url}")
-                result = subprocess.run([
-                    'git', 'clone', '--depth', '1', '--quiet', repo_url, temp_dir
-                ], check=True, capture_output=True, text=True)
+                # Clone repository using shared method
+                self._clone_repository(repo_url, temp_dir)
 
                 docs = self._extract_scenario_input_files(temp_dir)
 
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to clone krkn-hub repository: {e.stderr}")
-                raise
             except Exception as e:
                 logger.error(f"Error processing cloned krkn-hub repository: {e}")
                 raise
@@ -268,30 +331,103 @@ class FaissDocumentIndexer:
             logger.warning(f"Failed to process file {file_path}: {e}")
             return None
 
+    def chunk_by_size(self, doc: Dict[str, Any], characters: int = 512) -> List[Dict[str, Any]]:
+        """Split document by character count"""
+        chunks = []
+        content = doc["content"]
+
+        # Split into chunks by character count
+        for i in range(0, len(content), characters):
+            chunk_content = content[i:i + characters]
+
+            if len(chunk_content.strip()) > 50:  # Only keep meaningful chunks
+                chunks.append({
+                    "url": doc["url"],
+                    "title": doc["title"],
+                    "content": chunk_content,
+                    "source": doc["source"],
+                    "chunk_type": "size_based"
+                })
+
+        return chunks
+
+    def chunk_by_heading(self, doc: Dict[str, Any], heading: str = "###") -> List[Dict[str, Any]]:
+        """Split document by heading level (e.g., '###' for H3)"""
+        chunks = []
+        content = doc["content"]
+        lines = content.split('\n')
+
+        current_section = []
+        current_heading_title = "Introduction"
+        section_number = 0
+
+        for line in lines:
+            # Check if this line starts with the specified heading level
+            if line.strip().startswith(heading + ' '):
+                # Save previous section if it has content
+                if current_section:
+                    section_content = '\n'.join(current_section).strip()
+                    if len(section_content) > 100:  # Only keep substantial sections
+                        chunks.append({
+                            "url": f"{doc['url']}#{current_heading_title.lower().replace(' ', '-').replace('/', '-')}",
+                            "title": f"{doc['title']}: {current_heading_title}",
+                            "content": section_content,
+                            "source": doc["source"],
+                            "chunk_type": "heading_based",
+                            "heading_level": heading,
+                            "section_title": current_heading_title,
+                            "section_number": section_number
+                        })
+
+                # Start new section
+                current_heading_title = line.strip()[len(heading):].strip()  # Remove heading markers
+                section_number += 1
+                current_section = [line]  # Include the heading in the section
+            else:
+                # Add line to current section
+                current_section.append(line)
+
+        # Don't forget the last section
+        if current_section:
+            section_content = '\n'.join(current_section).strip()
+            if len(section_content) > 100:
+                chunks.append({
+                    "url": f"{doc['url']}#{current_heading_title.lower().replace(' ', '-').replace('/', '-')}",
+                    "title": f"{doc['title']}: {current_heading_title}",
+                    "content": section_content,
+                    "source": doc["source"],
+                    "chunk_type": "heading_based",
+                    "heading_level": heading,
+                    "section_title": current_heading_title,
+                    "section_number": section_number
+                })
+
+        return chunks
+
     def chunk_documents(self, docs: List[Dict[str, Any]], chunk_size: int = 512) -> List[Dict[str, Any]]:
-        """Split documents into smaller chunks for better retrieval"""
+        """Split documents into smaller chunks using their specified chunking strategy"""
         chunked_docs = []
 
         for doc in docs:
-            content = doc["content"]
-            words = content.split()
+            strategy = doc.get("chunking_strategy", "size")
 
-            # Split into chunks
-            for i in range(0, len(words), chunk_size):
-                chunk_words = words[i:i + chunk_size]
-                chunk_content = " ".join(chunk_words)
+            if strategy == "heading":
+                heading_level = doc.get("heading_level", "###")
+                chunks = self.chunk_by_heading(doc, heading=heading_level)
+                logger.info(f"Applied heading-based chunking ({heading_level}) to {doc['title']}: {len(chunks)} chunks")
+            else:
+                # Default to size-based chunking
+                chunks = self.chunk_by_size(doc, characters=chunk_size)
 
-                if len(chunk_content.strip()) > 50:
-                    chunked_docs.append({
-                        "url": doc["url"],
-                        "title": doc["title"],
-                        "content": chunk_content,
-                        "source": doc["source"],  # Keep original source for langchain compatibility
-                        "chunk_id": len(chunked_docs)
-                    })
-                    # DEBUG: Log krknctl specific documents
-                    if "krknctl" in doc["title"].lower() or "krknctl" in doc["source"].lower():
-                        logger.info(f"KRKNCTL DOC CHUNKED: {doc['title']} (source: {doc['source']})")
+            chunked_docs.extend(chunks)
+
+            # DEBUG: Log krknctl specific documents
+            if "krknctl" in doc["title"].lower() or "krknctl" in doc.get("source", "").lower():
+                logger.info(f"KRKNCTL DOC CHUNKED: {doc['title']} (strategy: {strategy}, chunks: {len(chunks)})")
+
+        # Add chunk_id to all chunks
+        for i, chunk in enumerate(chunked_docs):
+            chunk["chunk_id"] = i
 
         return chunked_docs
 

@@ -123,8 +123,8 @@ def load_llama31_krknctl_rag_pipeline(
 
         docs_content = "\n\n".join(context_parts)
 
-        # Create focused prompt for krknctl scenarios with scenario name extraction
-        prompt = f"""You are a krknctl assistant. Answer the user's question using ONLY the provided context.
+        # Create enhanced prompt for both krknctl scenarios and chaos testing theory
+        prompt = f"""You are a chaos engineering assistant specializing in krknctl and chaos testing theory. Answer the user's question using ONLY the provided context.
 
 The context below contains documents with RELEVANCE SCORES. Higher scores (closer to 1.0) mean the document is more relevant to the question. Use this to prioritize your answer.
 
@@ -135,17 +135,30 @@ QUESTION: {state["question"]}
 
 INSTRUCTIONS:
 1. Look at the relevance scores and prioritize higher-scoring documents
-2. Find the krknctl scenario that best matches the question
-3. If you find a scenario name, include: SCENARIO: exact-scenario-name
-4. Provide a direct answer with the krknctl command
+2. Determine if this is a practical krknctl question or a theoretical chaos testing question:
+
+   FOR KRKNCTL QUESTIONS (asking about commands, scenarios, flags):
+   - Find the krknctl scenario that best matches the question
+   - If you find a scenario name, include: SCENARIO: exact-scenario-name
+   - Provide the specific krknctl command with required flags
+   - Include practical usage examples
+
+   FOR THEORETICAL CHAOS TESTING QUESTIONS (asking about concepts, best practices, methodology):
+   - Focus on chaos testing principles, strategies, and best practices
+   - Reference relevant sections from the chaos testing guide
+   - Explain concepts clearly with context from the documentation
+   - Connect theory to practical applications when possible
+
+3. Base your answer entirely on the provided context - do not add information not present in the documents
+4. If the context doesn't contain sufficient information, say so clearly
 
 Answer:"""
 
         try:
-            # Increased tokens for complete responses while maintaining focus
+            # Enhanced parameters for both practical and theoretical responses
             response = llama_model(
                 prompt,
-                max_tokens=350,   # More space for complete answers
+                max_tokens=450,   # More space for theoretical explanations
                 temperature=0.15, # Low but allows some reasoning
                 top_p=0.8,        # Moderate sampling
                 repeat_penalty=1.1,
@@ -160,7 +173,9 @@ Answer:"""
             print(f"Response length: {len(generated_response)} characters")
             print(f"Response preview: {generated_response[:200]}...")
             if "SCENARIO:" in generated_response:
-                print(f"SCENARIO tag detected in response")
+                print(f"SCENARIO tag detected - krknctl command response")
+            else:
+                print(f"No SCENARIO tag - likely theoretical chaos testing response")
             print("[DEBUG] Response generation completed\n")
 
             return {"answer": generated_response}
