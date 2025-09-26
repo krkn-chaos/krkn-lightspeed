@@ -6,7 +6,6 @@ Uses the new FAISS + llama.cpp + all-MiniLM-L6-v2 pipeline
 Compatible with krknctl OpenAI-style API
 """
 
-import asyncio
 import logging
 import time
 import re
@@ -14,20 +13,24 @@ from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from rag_pipelines.llama31_krknctl_rag_pipeline import (
+    load_llama31_krknctl_rag_pipeline,
+)
 
 # Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-from rag_pipelines.llama31_krknctl_rag_pipeline import load_llama31_krknctl_rag_pipeline
-
-# Optional import for backward compatibility
 try:
-    from utils.state_graph import get_context
+    from utils.state_graph import get_context  # NOQA
 except ImportError:
-    logger.warning("utils.state_graph not available, sources formatting will be simplified")
+    logger.warning(
+        "utils.state_graph not available, "
+        "sources formatting will be simplified"
+    )
+
+    # Optional import for backward compatibility
+
     def get_context(result):
         """Fallback implementation when langgraph is not available"""
         context_docs = result.get("context", [])
@@ -46,13 +49,16 @@ except ImportError:
                 sources_md_lines.append(f"     {snippet}")
         return sources_md_lines
 
+
 # Global pipeline instance
 rag_pipeline = None
+
 
 # krknctl-compatible models (matching OpenAI format)
 class ChatMessage(BaseModel):
     role: str
     content: str
+
 
 class QueryRequest(BaseModel):
     model: str
@@ -61,15 +67,18 @@ class QueryRequest(BaseModel):
     max_tokens: Optional[int] = 512
     stream: Optional[bool] = False
 
+
 class QueryChoice(BaseModel):
     index: int
     message: ChatMessage
     finish_reason: str
 
+
 class Usage(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
+
 
 class QueryResponse(BaseModel):
     id: str
@@ -79,6 +88,7 @@ class QueryResponse(BaseModel):
     choices: List[QueryChoice]
     usage: Usage
     scenario_name: Optional[str] = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -94,7 +104,7 @@ async def lifespan(app: FastAPI):
             repo_path="content/en/docs",
             persist_dir="faiss_index",
             model_path="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-            krkn_hub_repo="https://github.com/krkn-chaos/krkn-hub"
+            krkn_hub_repo="https://github.com/krkn-chaos/krkn-hub",
         )
         logger.info("krknctl RAG pipeline initialized successfully")
     except Exception as e:
@@ -106,21 +116,30 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("krknctl RAG service shutting down...")
 
+
 # Create FastAPI app with lifespan management
 app = FastAPI(
     title="krknctl Lightspeed RAG Service",
     version="2.0.0",
-    description="Retrieval-Augmented Generation service for krknctl chaos engineering assistance using FAISS + llama.cpp",
-    lifespan=lifespan
+    description="Retrieval-Augmented Generation service for "
+    "krknctl chaos engineering assistance using FAISS + llama.cpp",
+    lifespan=lifespan,
 )
+
 
 def extract_scenario_name(response_text: str) -> Optional[str]:
     """Extract scenario name from response if SCENARIO: tag is present"""
-    # More flexible regex that captures scenario names with dashes, optionally wrapped in quotes, backticks, or other symbols
-    match = re.search(r'SCENARIO:\s*[`"\']*([a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]|[a-zA-Z0-9]+)[`"\']*', response_text)
+    # More flexible regex that captures scenario names with dashes,
+    # optionally wrapped in quotes, backticks, or other symbols
+    match = re.search(
+        r'SCENARIO:\s*[`"\']*([a-zA-Z0-9][a-zA-Z0-9\-_]*'
+        r'[a-zA-Z0-9]|[a-zA-Z0-9]+)[`"\']*',
+        response_text,
+    )
     if match:
         return match.group(1).strip()
     return None
+
 
 def get_user_query_from_messages(messages: List[ChatMessage]) -> str:
     """Extract user query from OpenAI messages format"""
@@ -130,6 +149,7 @@ def get_user_query_from_messages(messages: List[ChatMessage]) -> str:
             return message.content
     return ""
 
+
 @app.get("/")
 async def root():
     """Root endpoint with service information"""
@@ -137,23 +157,24 @@ async def root():
         "service": "krknctl Lightspeed RAG",
         "version": "2.0.0",
         "backend": "FAISS + llama.cpp + all-MiniLM-L6-v2",
-        "description": "AI-powered assistance for krknctl chaos engineering scenarios",
-        "endpoints": {
-            "health": "/health",
-            "query": "/v1/chat/completions"
-        }
+        "description": "AI-powered assistance for "
+        "krknctl chaos engineering scenarios",
+        "endpoints": {"health": "/health", "query": "/v1/chat/completions"},
     }
+
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     if not rag_pipeline:
-        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+        raise HTTPException(
+            status_code=503, detail="RAG pipeline not initialized"
+        )
 
     # Get document count from pipeline
     documents_count = 0
     try:
-        if hasattr(rag_pipeline, 'get_documents_count'):
+        if hasattr(rag_pipeline, "get_documents_count"):
             documents_count = rag_pipeline.get_documents_count()
         else:
             logger.warning("Pipeline does not have get_documents_count method")
@@ -165,8 +186,9 @@ async def health_check():
         "service": "krknctl-lightspeed-rag",
         "model": "Llama-3.2-3B-Instruct-Q4_K_M",
         "model_status": "loaded",
-        "documents_indexed": documents_count
+        "documents_indexed": documents_count,
     }
+
 
 @app.post("/v1/chat/completions", response_model=QueryResponse)
 async def chat_completions(request: QueryRequest):
@@ -176,15 +198,21 @@ async def chat_completions(request: QueryRequest):
     """
     try:
         if not rag_pipeline:
-            raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+            raise HTTPException(
+                status_code=503, detail="RAG pipeline not initialized"
+            )
 
         if request.stream:
-            raise HTTPException(status_code=400, detail="Streaming not yet supported")
+            raise HTTPException(
+                status_code=400, detail="Streaming not yet supported"
+            )
 
         # Extract user query from messages
         user_query = get_user_query_from_messages(request.messages)
         if not user_query:
-            raise HTTPException(status_code=400, detail="No user message found in request")
+            raise HTTPException(
+                status_code=400, detail="No user message found in request"
+            )
 
         # Execute the pipeline
         result = rag_pipeline.invoke({"question": user_query})
@@ -200,7 +228,9 @@ async def chat_completions(request: QueryRequest):
         response_id = f"chatcmpl-{current_time}"
 
         # Estimate token usage (rough approximation)
-        prompt_tokens = sum(len(msg.content.split()) for msg in request.messages)
+        prompt_tokens = sum(
+            len(msg.content.split()) for msg in request.messages
+        )
         completion_tokens = len(response_text.split())
         total_tokens = prompt_tokens + completion_tokens
 
@@ -213,25 +243,27 @@ async def chat_completions(request: QueryRequest):
                 QueryChoice(
                     index=0,
                     message=ChatMessage(
-                        role="assistant",
-                        content=response_text
+                        role="assistant", content=response_text
                     ),
-                    finish_reason="stop"
+                    finish_reason="stop",
                 )
             ],
             usage=Usage(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
-                total_tokens=total_tokens
+                total_tokens=total_tokens,
             ),
-            scenario_name=scenario_name
+            scenario_name=scenario_name,
         )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error processing chat completion: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}"
+        )
+
 
 # Legacy endpoints for backward compatibility
 @app.post("/query")
@@ -244,14 +276,16 @@ async def legacy_query(request: Dict[str, Any]):
         # Convert legacy format to OpenAI format
         query = request.get("query", "")
         if not query:
-            raise HTTPException(status_code=400, detail="Missing 'query' field")
+            raise HTTPException(
+                status_code=400, detail="Missing 'query' field"
+            )
 
         openai_request = QueryRequest(
             model="llama-3.2-3b-instruct",
             messages=[ChatMessage(role="user", content=query)],
             temperature=request.get("temperature", 0.1),
             max_tokens=request.get("max_tokens", 512),
-            stream=request.get("stream", False)
+            stream=request.get("stream", False),
         )
 
         # Call the main endpoint
@@ -262,14 +296,17 @@ async def legacy_query(request: Dict[str, Any]):
             "response": response.choices[0].message.content,
             "sources": [],  # Legacy format doesn't include detailed sources
             "query": query,
-            "scenario_name": response.scenario_name
+            "scenario_name": response.scenario_name,
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error in legacy query endpoint: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}"
+        )
+
 
 @app.post("/chat")
 async def chat_with_krknctl(request: Dict[str, Any]):
@@ -279,11 +316,15 @@ async def chat_with_krknctl(request: Dict[str, Any]):
     """
     try:
         if not rag_pipeline:
-            raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+            raise HTTPException(
+                status_code=503, detail="RAG pipeline not initialized"
+            )
 
         query = request.get("query", "")
         if not query:
-            raise HTTPException(status_code=400, detail="Missing 'query' field")
+            raise HTTPException(
+                status_code=400, detail="Missing 'query' field"
+            )
 
         # Execute the pipeline
         result = rag_pipeline.invoke({"question": query})
@@ -292,7 +333,7 @@ async def chat_with_krknctl(request: Dict[str, Any]):
         response_data = {
             "answer": result.get("answer", "No response generated"),
             "context": result.get("context", []),
-            "question": query
+            "question": query,
         }
 
         # Add sources information using existing utility function
@@ -310,15 +351,13 @@ async def chat_with_krknctl(request: Dict[str, Any]):
         raise
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}"
+        )
+
 
 if __name__ == "__main__":
     import uvicorn
 
     logger.info("Starting krknctl Lightspeed RAG service...")
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8080,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")

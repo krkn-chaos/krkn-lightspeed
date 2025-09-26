@@ -20,8 +20,8 @@ if "messages" not in st.session_state:
 
 @st.cache_resource
 def get_graph():
-    github_repo="https://github.com/krkn-chaos/website"
-    repo_path="content/en/docs"
+    github_repo = "https://github.com/krkn-chaos/website"
+    repo_path = "content/en/docs"
     return load_llama31_rag_pipeline(github_repo, repo_path)
     # return load_granite_rag_pipeline()
 
@@ -49,7 +49,7 @@ if prompt := st.chat_input("Ask about krkn pod chaos scenarios..."):
 
             # Show sources and brief context snippets
             context_docs = result.get("context", [])
-            
+
             sources_md_lines = get_context(result=result)
 
             sources_md = "\n\n".join(sources_md_lines)
@@ -57,6 +57,8 @@ if prompt := st.chat_input("Ask about krkn pod chaos scenarios..."):
                 st.markdown(sources_md)
     # Persist assistant response with sources for chat history
     assistant_content = response
-    if 'sources_md' in locals() and sources_md:
+    if "sources_md" in locals() and sources_md:
         assistant_content = f"{response}\n\n{sources_md}"
-    st.session_state.messages.append({"role": "assistant", "content": assistant_content})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": assistant_content}
+    )

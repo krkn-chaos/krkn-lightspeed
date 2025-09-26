@@ -10,14 +10,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-
-
 class FAISSVectorStore:
     """FAISS-based vector store that mimics langchain VectorStore interface"""
 
     def __init__(self, index_dir: str):
         self.index_dir = index_dir
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
         self.index = None
         self.documents = []
         self.load_index()
@@ -36,19 +34,26 @@ class FAISSVectorStore:
         docs_path = os.path.join(self.index_dir, "documents.json")
         if not os.path.exists(docs_path):
             raise FileNotFoundError(f"Documents file not found: {docs_path}")
-        with open(docs_path, 'r') as f:
+        with open(docs_path, "r") as f:
             self.documents = json.load(f)
 
         # DEBUG: Print indexed documents summary
-        print(f"\n[DEBUG] INDEXED DOCUMENTS SUMMARY:")
+        print("\n[DEBUG] INDEXED DOCUMENTS SUMMARY:")
         print(f"Total documents: {len(self.documents)}")
         doc_types = {}
         for doc in self.documents:
-            doc_type = "website" if "krkn-chaos.dev" in doc.get("url", "") else "other"
+            doc_type = (
+                "website"
+                if "krkn-chaos.dev" in doc.get("url", "")
+                else "other"
+            )
             doc_types[doc_type] = doc_types.get(doc_type, 0) + 1
         for doc_type, count in doc_types.items():
             print(f"- {doc_type}: {count} documents")
-        print(f"Sample document titles: {[doc.get('title', 'untitled')[:50] for doc in self.documents[:5]]}")
+        print(
+            f"Sample document titles: "
+            f"{[doc.get('title', 'untitled')[:50] for doc in self.documents[:5]]}"  # NOQA
+        )
         print("[DEBUG] Index loaded successfully\n")
 
     def similarity_search(self, query: str, k: int = 5) -> List[Document]:
@@ -76,8 +81,8 @@ class FAISSVectorStore:
                         "source": doc_data["source"],
                         "title": doc_data["title"],
                         "url": doc_data["url"],
-                        "relevance_score": float(score)
-                    }
+                        "relevance_score": float(score),
+                    },
                 )
                 documents.append(doc)
 
@@ -85,17 +90,23 @@ class FAISSVectorStore:
         print(f"\n[DEBUG] RETRIEVED CONTEXT for query: '{query}'")
         print(f"Found {len(documents)} relevant documents:")
         for i, doc in enumerate(documents):
-            print(f"- Doc {i+1}: {doc.metadata.get('title', 'untitled')[:50]} (score: {doc.metadata.get('relevance_score', 0):.3f})")
+            print(
+                f"- Doc {i+1}: {doc.metadata.get('title', 'untitled')[:50]}"
+                f" (score: {doc.metadata.get('relevance_score', 0):.3f})"
+            )
             print(f"  Content preview: {doc.page_content[:100]}...")
         print("[DEBUG] Context retrieval completed\n")
 
         return documents
 
+
 class SimpleStateGraph:
     def __init__(self, retrieve_fn, generate_fn, vector_store_ref):
         self.retrieve = retrieve_fn
         self.generate = generate_fn
-        self.vector_store = vector_store_ref  # Keep reference for health checks
+        self.vector_store = (
+            vector_store_ref  # Keep reference for health checks
+        )
 
     def invoke(self, initial_state: dict) -> dict:
         """Execute the pipeline: retrieve -> generate"""
@@ -113,6 +124,6 @@ class SimpleStateGraph:
 
     def get_documents_count(self) -> int:
         """Get the number of indexed documents"""
-        if hasattr(self.vector_store, 'documents'):
+        if hasattr(self.vector_store, "documents"):
             return len(self.vector_store.documents)
         return 0

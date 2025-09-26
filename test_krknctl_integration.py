@@ -9,23 +9,28 @@ import os
 import sys
 import time
 import logging
-from typing import Dict, Any
 
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from rag_pipelines.llama31_krknctl_rag_pipeline import load_llama31_krknctl_rag_pipeline
-    from utils.state_graph import get_context
+    from rag_pipelines.llama31_krknctl_rag_pipeline import (
+        load_llama31_krknctl_rag_pipeline,
+    )
+    from utils.state_graph import get_context  # NOQA
 except ImportError as e:
     print(f"Import error: {e}")
-    print("Make sure you've installed the dependencies from requirements_krknctl.txt:")
+    print(
+        "Make sure you've installed the dependencies "
+        "from requirements_krknctl.txt:"
+    )
     print("pip install -r requirements_krknctl.txt")
     sys.exit(1)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def test_pipeline_loading():
     """Test that the pipeline loads correctly"""
@@ -36,13 +41,14 @@ def test_pipeline_loading():
             github_repo="https://github.com/krkn-chaos/website",
             repo_path="content/en/docs",
             persist_dir="test_faiss_index",
-            model_path="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+            model_path="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
         )
         print("✅ Pipeline loaded successfully")
         return pipeline
     except Exception as e:
         print(f"❌ Pipeline loading failed: {e}")
         return None
+
 
 def test_query_execution(pipeline):
     """Test query execution with the pipeline"""
@@ -52,7 +58,7 @@ def test_query_execution(pipeline):
         "What is krknctl?",
         "How do I run a pod kill scenario?",
         "What scenarios are available for chaos engineering?",
-        "Tell me about node scenarios"
+        "Tell me about node scenarios",
     ]
 
     for query in test_queries:
@@ -77,6 +83,7 @@ def test_query_execution(pipeline):
         except Exception as e:
             print(f"❌ Query failed: {e}")
 
+
 def test_openai_compatibility():
     """Test OpenAI-compatible request/response format"""
     print("\n=== Testing OpenAI Compatibility ===")
@@ -84,17 +91,14 @@ def test_openai_compatibility():
     # Test data structures
     try:
         # Simulate the structures used in krknctl
-        chat_message = {
-            "role": "user",
-            "content": "What is krknctl used for?"
-        }
+        chat_message = {"role": "user", "content": "What is krknctl used for?"}
 
         query_request = {
             "model": "llama-3.2-3b-instruct",
             "messages": [chat_message],
             "temperature": 0.1,
             "max_tokens": 512,
-            "stream": False
+            "stream": False,
         }
 
         print("✅ OpenAI-compatible request structure created")
@@ -106,20 +110,22 @@ def test_openai_compatibility():
             "object": "chat.completion",
             "created": int(time.time()),
             "model": "llama-3.2-3b-instruct",
-            "choices": [{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": "Test response"
-                },
-                "finish_reason": "stop"
-            }],
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "Test response",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
             "usage": {
                 "prompt_tokens": 10,
                 "completion_tokens": 5,
-                "total_tokens": 15
+                "total_tokens": 15,
             },
-            "scenario_name": None
+            "scenario_name": None,
         }
 
         print("✅ OpenAI-compatible response structure created")
@@ -127,6 +133,7 @@ def test_openai_compatibility():
 
     except Exception as e:
         print(f"❌ OpenAI compatibility test failed: {e}")
+
 
 def test_scenario_detection():
     """Test scenario name detection from responses"""
@@ -136,18 +143,19 @@ def test_scenario_detection():
         "You can use SCENARIO: pod-kill to kill pods in your cluster",
         "Try running SCENARIO: node-cpu-hog for CPU stress testing",
         "The SCENARIO: memory-hog scenario will consume memory",
-        "This is a general response without any scenario"
+        "This is a general response without any scenario",
     ]
 
     import re
 
     for response in test_responses:
-        match = re.search(r'SCENARIO:\s*([a-zA-Z0-9\-_]+)', response)
+        match = re.search(r"SCENARIO:\s*([a-zA-Z0-9\-_]+)", response)
         scenario_name = match.group(1).strip() if match else None
 
         print(f"Response: {response[:50]}...")
         print(f"Detected scenario: {scenario_name or 'None'}")
         print("---")
+
 
 def main():
     """Run all tests"""
@@ -170,13 +178,17 @@ def main():
 
     print("\n🎉 All tests completed!")
     print("\nNext steps:")
-    print("1. Download Llama 3.2 3B model to models/Llama-3.2-3B-Instruct-Q4_K_M.gguf")
+    print(
+        "1. Download Llama 3.2 3B model to "
+        "models/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+    )
     print("2. Run the FastAPI server: python fastapi_app.py")
     print("3. Test the API endpoints:")
     print("   - GET /health")
     print("   - POST /v1/chat/completions")
     print("   - POST /query (legacy)")
     print("   - POST /chat (compatibility)")
+
 
 if __name__ == "__main__":
     main()

@@ -12,9 +12,7 @@ def build_state_graph(vector_store, prompt, llm):
 
     # Define application steps
     def retrieve(state: State):
-        retrieved_docs = vector_store.similarity_search(
-            state["question"], k=1
-        )
+        retrieved_docs = vector_store.similarity_search(state["question"], k=1)
         return {"context": retrieved_docs}
 
     def generate(state: State):
@@ -49,10 +47,12 @@ def run_question_loop(graph):
 
         print("\nAnswer:", result["answer"])
 
-        sources_md_lines =get_context(result)
+        sources_md_lines = get_context(result)
+
         sources_md = "\n\n".join(sources_md_lines)
         # Print sources and brief context for transparency
         print(sources_md)
+
 
 # Generated using Cursor
 def get_context(result):
@@ -75,10 +75,15 @@ def get_context(result):
 
 def get_url_from_source(source):
     if "docs" in source:
-        source = re.sub("[A-Za-z_0-9/]*content/en/docs", "https://krkn-chaos.dev/docs", source)
+        source = re.sub(
+            "[A-Za-z_0-9/]*content/en/docs",
+            "https://krkn-chaos.dev/docs",
+            source,
+        )
         source = re.sub(".md", "", source)
         source = re.sub("/_index", "", source)
     return source
+
 
 class State(TypedDict):
     question: str
