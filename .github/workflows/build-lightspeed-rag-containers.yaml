@@ -162,25 +162,19 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
-          # Create nvidia manifest (amd64 + arm64)
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia \
+          # Create nvidia manifest (amd64 + arm64) - overwrite if exists
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia-amd64.${VERSION} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia-arm64.${VERSION}
 
-          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia
-
-          # Create apple-silicon manifest (arm64 only)
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-apple-silicon \
+          # Create apple-silicon manifest (arm64 only) - overwrite if exists
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-apple-silicon \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-apple-silicon-arm64.${VERSION}
 
-          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-apple-silicon
-
-          # Create generic manifest (uses nvidia images as fallback)
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-generic \
+          # Create generic manifest (uses nvidia images as fallback) - overwrite if exists
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-generic \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia-amd64.${VERSION} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-nvidia-arm64.${VERSION}
-
-          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rag-model-generic
