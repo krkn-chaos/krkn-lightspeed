@@ -91,7 +91,7 @@ def load_llama31_krknctl_rag_pipeline(
 
         llama_params = {
             "model_path": model_path,
-            "n_ctx": 4096,
+            "n_ctx": 16384,  # Increased from 4096 to better utilize model capacity
             "n_gpu_layers": gpu_config["n_gpu_layers"],
             "verbose": gpu_config["verbose"],
         }
@@ -109,7 +109,7 @@ def load_llama31_krknctl_rag_pipeline(
     # Build state graph compatible with existing structure
     def retrieve(state: State):
         """Retrieve relevant documents"""
-        retrieved_docs = vector_store.similarity_search(state["question"], k=5)
+        retrieved_docs = vector_store.similarity_search(state["question"], k=3)
         return {"context": retrieved_docs}
 
     def generate(state: State):
@@ -132,41 +132,34 @@ def load_llama31_krknctl_rag_pipeline(
 
         docs_content = "\n\n".join(context_parts)
 
-        # Create enhanced prompt with source-based guidance
-        prompt = f"""You are a chaos engineering assistant. 
-        Answer the user's question using the provided documentation context.
+        # Create balanced prompt that uses context effectively
+        prompt = f"""You are a chaos engineering assistant. Use the provided context to answer the user's question about krknctl and chaos testing.
 
 CONTEXT:
 {docs_content}
 
 QUESTION: {state["question"]}
 
-INSTRUCTIONS:
-1. Look at the SOURCE information in the context to determine response type:
-   - If SOURCE contains "chaos-testing-guide": Provide theoretical chaos testing explanations
-   - If SOURCE contains "krkn-hub" or "scenario": Provide operational krknctl commands with "SCENARIO: exact-scenario-name"
-   - If SOURCE contains "krknctl": Provide practical command guidance
-
-2. Use documents with higher RELEVANCE scores to prioritize information
-3. For operational questions:
-   - Look for "krknctl Scenario:" or "Command: krknctl run" in the documentation to find the exact scenario name
-   - Extract the EXACT scenario name as written (e.g., if you see "krknctl run zone-outages", use "zone-outages" not "zone-outage")
-   - Do not modify, abbreviate, or change the scenario name in any way
-   - Include specific krknctl commands and required flags
-   - Format: "SCENARIO: exact-scenario-name-as-documented"
-4. For theoretical questions: Focus on concepts, best practices, and methodologies
-5. Give a direct, professional answer without exposing the technical metadata
+KRKNCTL SYNTAX RULES:
+1. krknctl ALWAYS follows this syntax: "krknctl run <scenario_name> --<option> value --<option> value"
+2. NEVER use --scenario=<name> - this syntax does NOT exist
+3. Find scenario names from the context documents (especially from paths like content/en/docs/scenarios/<scenario_name>/<scenario-name>-krknctl.md)
+4. Use scenario names and options EXACTLY as documented in the context - NEVER invent parameter names
+5. If suggesting a krknctl command, format it as: "SCENARIO: scenario-name-from-context"
+6. Only use parameters that are explicitly mentioned in the context documentation
+7. If you cannot find the exact parameters in the context, say so rather than guessing
+8. Always verify both scenario name and ALL options exist in the provided documentation before suggesting them
 
 Answer:"""  # NOQA
 
         try:
-            # Enhanced parameters for complete, professional responses
+            # Balanced parameters for accuracy without over-restriction
             response = llama_model(
                 prompt,
-                max_tokens=600,  # Sufficient space for complete answers
-                temperature=0.1,  # Very focused and consistent
-                top_p=0.9,  # High quality sampling
-                repeat_penalty=1.15,
+                max_tokens=500,  # Enough space for complete answers
+                temperature=0.1,  # Low but not zero for some flexibility
+                top_p=0.9,  # Good sampling quality
+                repeat_penalty=1.15,  # Moderate penalty
                 echo=False,
             )
 
