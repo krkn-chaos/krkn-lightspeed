@@ -109,7 +109,7 @@ def load_llama31_krknctl_rag_pipeline(
     # Build state graph compatible with existing structure
     def retrieve(state: State):
         """Retrieve relevant documents"""
-        retrieved_docs = vector_store.similarity_search(state["question"], k=3)
+        retrieved_docs = vector_store.similarity_search(state["question"], k=1)
         return {"context": retrieved_docs}
 
     def generate(state: State):
