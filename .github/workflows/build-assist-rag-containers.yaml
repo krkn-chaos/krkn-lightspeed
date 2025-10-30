@@ -3,14 +3,14 @@ name: Build Lightspeed RAG Containers
 on:
   pull_request:
     paths:
-      - 'containers/lightspeed-rag/**'
+      - 'containers/assist-rag/**'
   push:
     tags:
       - 'v*'
 
 env:
   REGISTRY: quay.io
-  IMAGE_NAME: krkn-chaos/krknctl-lightspeed
+  IMAGE_NAME: krkn-chaos/krknctl-assist
 
 jobs:
   build-arm64-nvidia:
@@ -47,8 +47,8 @@ jobs:
       - name: Build container
         uses: docker/build-push-action@v5
         with:
-          context: ./containers/lightspeed-rag
-          file: ./containers/lightspeed-rag/Containerfile.nvidia
+          context: ./containers/assist-rag
+          file: ./containers/assist-rag/Containerfile.nvidia
           platforms: linux/arm64
           push: ${{ steps.version.outputs.is_tag }}
           tags: |
@@ -90,8 +90,8 @@ jobs:
       - name: Build container
         uses: docker/build-push-action@v5
         with:
-          context: ./containers/lightspeed-rag
-          file: ./containers/lightspeed-rag/Containerfile.apple-silicon
+          context: ./containers/assist-rag
+          file: ./containers/assist-rag/Containerfile.apple-silicon
           platforms: linux/arm64
           push: ${{ steps.version.outputs.is_tag }}
           tags: |
@@ -130,8 +130,8 @@ jobs:
       - name: Build container
         uses: docker/build-push-action@v5
         with:
-          context: ./containers/lightspeed-rag
-          file: ./containers/lightspeed-rag/Containerfile.nvidia
+          context: ./containers/assist-rag
+          file: ./containers/assist-rag/Containerfile.nvidia
           platforms: linux/amd64
           push: ${{ steps.version.outputs.is_tag }}
           tags: |

@@ -59,21 +59,21 @@ Examples:
 Flags:
 --all  Clean all krknctl resources
 
-#### krknctl lightspeed
+#### krknctl assist
 AI-powered chaos engineering assistance (requires GPU support).
 
-Usage: krknctl lightspeed [command] [flags]
+Usage: krknctl assist [command] [flags]
 
 Subcommands:
-- krknctl lightspeed check --gpu-nvidia    Check NVIDIA GPU support
-- krknctl lightspeed check --gpu-amd       Check AMD GPU support  
-- krknctl lightspeed check --gpu-intel     Check Intel GPU support
-- krknctl lightspeed check --gpu-apple-silicon  Check Apple Silicon GPU support
-- krknctl lightspeed run                   Run AI-powered assistance
+- krknctl assist check --gpu-nvidia    Check NVIDIA GPU support
+- krknctl assist check --gpu-amd       Check AMD GPU support
+- krknctl assist check --gpu-intel     Check Intel GPU support
+- krknctl assist check --gpu-apple-silicon  Check Apple Silicon GPU support
+- krknctl assist run                   Run AI-powered assistance
 
 Flags:
 --no-gpu          Force CPU-only mode (disable GPU acceleration)
---private-registry-lightspeed string  Private registry for lightspeed images
+--private-registry-assist string  Private registry for assist images
 
 #### krknctl graph
 Manage chaos scenario dependency graphs.
@@ -215,16 +215,16 @@ krknctl run custom-scenario --private-registry=my-registry.com \
   --private-registry-username=user --private-registry-password=pass
 ```
 
-#### GPU/Lightspeed Usage
+#### GPU/assist Usage
 ```bash
 # Check GPU support
-krknctl lightspeed check --gpu-nvidia
+krknctl assist check --gpu-nvidia
 
-# Run Lightspeed service (requires GPU)
-krknctl lightspeed run
+# Run assist service (requires GPU)
+krknctl assist run
 
 # Force CPU-only mode (no GPU acceleration)
-krknctl lightspeed run --no-gpu
+krknctl assist run --no-gpu
 ```
 
 #### Graph Workflows

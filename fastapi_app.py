@@ -183,7 +183,7 @@ async def health_check():
 
     return {
         "status": "healthy",
-        "service": "krknctl-lightspeed-rag",
+        "service": "krknctl-assist-rag",
         "model": "Llama-3.2-3B-Instruct-Q4_K_M",
         "model_status": "loaded",
         "documents_indexed": documents_count,
