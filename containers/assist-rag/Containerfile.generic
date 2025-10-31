@@ -68,7 +68,7 @@ RUN mkdir -p /app/models && \
 
 # Pre-download embedding models to avoid runtime downloads
 RUN mkdir -p /root/.cache/huggingface/transformers && \
-    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; print('Downloading primary embedding model...'); model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2'); print('Primary model cached successfully'); print('Downloading Qwen embedding model...'); fallback = SentenceTransformer('Qwen/Qwen3-Embedding-0.6B'); print('Qwen model cached successfully')" && \
+    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; print('Downloading multi-qa-mpnet-base-dot-v1 embedding model...'); model = SentenceTransformer('sentence-transformers/multi-qa-mpnet-base-dot-v1'); print('Multi-QA model cached successfully')" && \
     echo "Embedding models pre-downloaded successfully"
 
 # Copy application files from repository (NEW IMPLEMENTATION)
@@ -76,6 +76,25 @@ RUN cp /tmp/krkn-assist/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/ && \
     cp /tmp/krkn-assist/fastapi_app.py /app/ && \
     cp -r /tmp/krkn-assist/utils /app/ && \
     echo "New FAISS implementation files copied successfully"
+
+# Pre-build FAISS index during container build to avoid runtime indexing delay
+RUN mkdir -p /app/faiss_index && \
+    cd /app && \
+    /app/venv/bin/python -c "
+import sys
+sys.path.append('/app')
+from utils.faiss_document_indexer import FaissDocumentIndexer
+print('Starting document indexing during container build...')
+indexer = FaissDocumentIndexer()
+indexer.build_and_save_index(
+    'https://github.com/krkn-chaos/website',
+    'content/en/docs',
+    'faiss_index',
+    'https://github.com/krkn-chaos/krkn-hub'
+)
+print('Document indexing completed successfully!')
+" && \
+    echo "FAISS index pre-built successfully"
 
 # Copy krknctl help and entrypoint
 COPY krknctl_help.txt .
@@ -115,6 +134,7 @@ ENV VIRTUAL_ENV="/app/venv"
 
 # Copy models and cached data
 COPY --from=builder /app/models/ /app/models/
+COPY --from=builder /app/faiss_index/ /app/faiss_index/
 COPY --from=builder /app/krknctl_help.txt /app/krknctl_help.txt
 COPY --from=builder /root/.cache/huggingface/ /root/.cache/huggingface/
 

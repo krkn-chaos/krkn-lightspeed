@@ -68,9 +68,9 @@ RUN mkdir -p /app/models && \
     ls -la /app/models/ && \
     [ $(stat -c%s /app/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf) -gt 1500000000 ] || (echo "Model download failed - file too small" && exit 1)
 
-# Pre-download embedding models (UPDATED to use all-mpnet-base-v2 primarily)
+# Pre-download embedding models (UPDATED to use multi-qa-mpnet-base-dot-v1)
 RUN mkdir -p /root/.cache/huggingface/transformers && \
-    python3 -c "from sentence_transformers import SentenceTransformer; print('Downloading all-mpnet-base-v2 embedding model...'); model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2'); print('Embedding model cached successfully')" && \
+    python3 -c "from sentence_transformers import SentenceTransformer; print('Downloading multi-qa-mpnet-base-dot-v1 embedding model...'); model = SentenceTransformer('sentence-transformers/multi-qa-mpnet-base-dot-v1'); print('Embedding model cached successfully')" && \
     echo "Embedding model pre-downloaded successfully"
 
 # Copy application files from repository (NEW IMPLEMENTATION)
@@ -78,6 +78,25 @@ RUN cp /tmp/krkn-assist/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/ && \
     cp /tmp/krkn-assist/fastapi_app.py /app/ && \
     cp -r /tmp/krkn-assist/utils /app/ && \
     echo "New FAISS implementation files copied successfully"
+
+# Pre-build FAISS index during container build to avoid runtime indexing delay
+RUN mkdir -p /app/faiss_index && \
+    cd /app && \
+    python3 -c "
+import sys
+sys.path.append('/app')
+from utils.faiss_document_indexer import FaissDocumentIndexer
+print('Starting document indexing during container build...')
+indexer = FaissDocumentIndexer()
+indexer.build_and_save_index(
+    'https://github.com/krkn-chaos/website',
+    'content/en/docs',
+    'faiss_index',
+    'https://github.com/krkn-chaos/krkn-hub'
+)
+print('Document indexing completed successfully!')
+" && \
+    echo "FAISS index pre-built successfully"
 
 # Copy krknctl help and entrypoint
 COPY krknctl_help.txt .

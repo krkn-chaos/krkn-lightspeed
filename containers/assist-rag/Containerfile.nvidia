@@ -65,6 +65,25 @@ RUN cp /tmp/krkn-assist/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/ && \
     cp -r /tmp/krkn-assist/utils /app/ && \
     rm -rf /tmp/krkn-assist /tmp/krkn-hub
 
+# Pre-build FAISS index during container build to avoid runtime indexing delay
+RUN mkdir -p /app/faiss_index && \
+    cd /app && \
+    /app/venv/bin/python -c "
+import sys
+sys.path.append('/app')
+from utils.faiss_document_indexer import FaissDocumentIndexer
+print('Starting document indexing during container build...')
+indexer = FaissDocumentIndexer()
+indexer.build_and_save_index(
+    'https://github.com/krkn-chaos/website',
+    'content/en/docs',
+    'faiss_index',
+    'https://github.com/krkn-chaos/krkn-hub'
+)
+print('Document indexing completed successfully!')
+" && \
+    echo "FAISS index pre-built successfully"
+
 
 # Cleanup virtual environment
 RUN find /app/venv -name "*.pyc" -delete && \
@@ -90,6 +109,7 @@ WORKDIR /app
 # Copy virtual environment and models
 COPY --from=builder /app/venv/ /app/venv/
 COPY --from=builder /app/models/ /app/models/
+COPY --from=builder /app/faiss_index/ /app/faiss_index/
 COPY krknctl_help.txt /app/krknctl_help.txt
 COPY --from=builder /root/.cache/huggingface/ /root/.cache/huggingface/
 
