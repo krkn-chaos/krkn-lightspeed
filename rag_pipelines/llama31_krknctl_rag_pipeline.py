@@ -108,6 +108,16 @@ def load_llama31_krknctl_rag_pipeline(
             "verbose": gpu_config["verbose"],
         }
 
+        # Add Vulkan-specific parameters if using Vulkan backend
+        if gpu_config["backend"] == "vulkan":
+            llama_params.update({
+                "split_mode": 1,  # Vulkan-specific: layer split mode
+                "tensor_split": None,  # Vulkan-specific: tensor split configuration
+                "main_gpu": 0,  # Vulkan-specific: main GPU selection
+                "offload_kqv": True,  # Vulkan-specific: offload key-query-value to GPU
+            })
+            logger.info("Added Vulkan-specific model parameters")
+
         if gpu_config["backend"] == "cuda":
             llama_params["main_gpu"] = gpu_config["main_gpu"]
         elif gpu_config["backend"] == "cpu":
@@ -118,7 +128,7 @@ def load_llama31_krknctl_rag_pipeline(
 
         # Log detailed hardware configuration
         logger.info("=== HARDWARE CONFIGURATION ===")
-        logger.info("🔄 CODE VERSION: 2024-10-31-v6-DETERMINISTIC") # Version marker
+        logger.info("🔄 CODE VERSION: 2024-10-31-v7-VULKAN-NATIVE") # Version marker
         logger.info(f"Backend: {gpu_config['backend']}")
         logger.info(f"GPU Layers: {gpu_config['n_gpu_layers']}")
         if 'main_gpu' in gpu_config:
@@ -200,14 +210,17 @@ Answer based ONLY on the context provided:"""  # NOQA
                 logger.info("Using standard CUDA parameters")
 
             elif backend == "vulkan":
-                # Vulkan: Fully deterministic approach
+                # Vulkan: Backend-specific parameters for consistent behavior
                 inference_params = {
                     "max_tokens": 500,
                     "temperature": 0.0,      # Completely deterministic
                     "repeat_penalty": 1.15,  # Keep penalty
+                    "seed": 42,              # Vulkan-specific: fixed seed for reproducibility
+                    "tfs_z": 1.0,           # Vulkan-specific: tail free sampling disabled
+                    "typical_p": 1.0,        # Vulkan-specific: typical sampling disabled
                     "echo": False,
                 }
-                logger.info("Using fully deterministic Vulkan parameters")
+                logger.info("Using Vulkan-specific deterministic parameters")
 
             else:  # CPU
                 # CPU: Conservative but effective
