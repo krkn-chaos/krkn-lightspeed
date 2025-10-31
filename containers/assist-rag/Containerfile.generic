@@ -80,20 +80,7 @@ RUN cp /tmp/krkn-assist/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/ && \
 # Pre-build FAISS index during container build to avoid runtime indexing delay
 RUN mkdir -p /app/faiss_index && \
     cd /app && \
-    /app/venv/bin/python -c "
-import sys
-sys.path.append('/app')
-from utils.faiss_document_indexer import FaissDocumentIndexer
-print('Starting document indexing during container build...')
-indexer = FaissDocumentIndexer()
-indexer.build_and_save_index(
-    'https://github.com/krkn-chaos/website',
-    'content/en/docs',
-    'faiss_index',
-    'https://github.com/krkn-chaos/krkn-hub'
-)
-print('Document indexing completed successfully!')
-" && \
+    /app/venv/bin/python -c "import sys; sys.path.append('/app'); from utils.faiss_document_indexer import FaissDocumentIndexer; print('Starting document indexing...'); indexer = FaissDocumentIndexer(); indexer.build_and_save_index('https://github.com/krkn-chaos/website', 'content/en/docs', 'faiss_index', 'https://github.com/krkn-chaos/krkn-hub'); print('Indexing completed!')" && \
     echo "FAISS index pre-built successfully"
 
 # Copy krknctl help and entrypoint
