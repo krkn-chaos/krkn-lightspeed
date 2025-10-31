@@ -15,7 +15,7 @@ class FAISSVectorStore:
 
     def __init__(self, index_dir: str):
         self.index_dir = index_dir
-        self.model = SentenceTransformer("sentence-transformers/multi-qa-mpnet-base-dot-v1")
+        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
         self.index = None
         self.documents = []
         self.load_index()
