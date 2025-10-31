@@ -80,10 +80,15 @@ def load_llama31_krknctl_rag_pipeline(
     os.makedirs(persist_dir, exist_ok=True)
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
 
-    # Check if index exists, if not build it
+    # Check if index exists or if forced rebuild is requested
     index_path = os.path.join(persist_dir, "index.faiss")
-    if not os.path.exists(index_path):
-        logger.info("Index not found, building new index...")
+    force_reindex = os.environ.get("FORCE_REINDEX", "false").lower() == "true"
+
+    if not os.path.exists(index_path) or force_reindex:
+        if force_reindex:
+            logger.info("FORCE_REINDEX=true detected, rebuilding index...")
+        else:
+            logger.info("Index not found, building new index...")
         indexer = FaissDocumentIndexer()
         indexer.build_and_save_index(
             github_repo, repo_path, persist_dir, krkn_hub_repo
