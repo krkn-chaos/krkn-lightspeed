@@ -522,7 +522,7 @@ class FaissDocumentIndexer:
         return chunks
 
     def chunk_documents(
-        self, docs: List[Dict[str, Any]], chunk_size: int = 256
+        self, docs: List[Dict[str, Any]], chunk_size: int = 800
     ) -> List[Dict[str, Any]]:
         """Split documents into smaller chunks
         using their specified chunking strategy"""
