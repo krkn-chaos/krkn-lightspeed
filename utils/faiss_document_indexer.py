@@ -420,24 +420,39 @@ class FaissDocumentIndexer:
     def chunk_by_size(
         self, doc: Dict[str, Any], characters: int = 512
     ) -> List[Dict[str, Any]]:
-        """Split document by character count"""
+        """Split document by character count with overlap"""
         chunks = []
         content = doc["content"]
+        overlap = characters // 4  # 25% overlap to preserve context
 
-        # Split into chunks by character count
-        for i in range(0, len(content), characters):
-            chunk_content = content[i : i + characters]  # NOQA
+        # Split into chunks with overlap
+        start = 0
+        while start < len(content):
+            end = start + characters
+            chunk_content = content[start:end]
+
+            # Try to break at word boundaries to avoid cutting words
+            if end < len(content) and not content[end].isspace():
+                last_space = chunk_content.rfind(' ')
+                if last_space > characters // 2:  # Only if we don't lose too much
+                    chunk_content = chunk_content[:last_space]
+                    end = start + last_space
 
             if len(chunk_content.strip()) > 50:  # Only keep meaningful chunks
                 chunks.append(
                     {
                         "url": doc["url"],
                         "title": doc["title"],
-                        "content": chunk_content,
+                        "content": chunk_content.strip(),
                         "source": doc["source"],
-                        "chunk_type": "size_based",
+                        "chunk_type": "size_based_overlap",
                     }
                 )
+
+            # Move start position with overlap
+            start = max(start + characters - overlap, end)
+            if start >= len(content):
+                break
 
         return chunks
 
@@ -507,7 +522,7 @@ class FaissDocumentIndexer:
         return chunks
 
     def chunk_documents(
-        self, docs: List[Dict[str, Any]], chunk_size: int = 512
+        self, docs: List[Dict[str, Any]], chunk_size: int = 256
     ) -> List[Dict[str, Any]]:
         """Split documents into smaller chunks
         using their specified chunking strategy"""
