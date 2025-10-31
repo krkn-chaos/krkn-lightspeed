@@ -118,7 +118,7 @@ def load_llama31_krknctl_rag_pipeline(
 
         # Log detailed hardware configuration
         logger.info("=== HARDWARE CONFIGURATION ===")
-        logger.info("🔄 CODE VERSION: 2024-10-31-v5-CUDA-MATCH") # Version marker
+        logger.info("🔄 CODE VERSION: 2024-10-31-v6-DETERMINISTIC") # Version marker
         logger.info(f"Backend: {gpu_config['backend']}")
         logger.info(f"GPU Layers: {gpu_config['n_gpu_layers']}")
         if 'main_gpu' in gpu_config:
@@ -200,15 +200,14 @@ Answer based ONLY on the context provided:"""  # NOQA
                 logger.info("Using standard CUDA parameters")
 
             elif backend == "vulkan":
-                # Vulkan: Match CUDA parameters exactly for consistency
+                # Vulkan: Fully deterministic approach
                 inference_params = {
                     "max_tokens": 500,
-                    "temperature": 0.1,      # Same as CUDA
-                    "top_p": 0.9,           # Same as CUDA
-                    "repeat_penalty": 1.15,  # Same as CUDA
+                    "temperature": 0.0,      # Completely deterministic
+                    "repeat_penalty": 1.15,  # Keep penalty
                     "echo": False,
                 }
-                logger.info("Using CUDA-matched Vulkan parameters for consistency")
+                logger.info("Using fully deterministic Vulkan parameters")
 
             else:  # CPU
                 # CPU: Conservative but effective
