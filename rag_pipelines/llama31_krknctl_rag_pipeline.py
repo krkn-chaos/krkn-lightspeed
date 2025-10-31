@@ -132,25 +132,33 @@ def load_llama31_krknctl_rag_pipeline(
 
         docs_content = "\n\n".join(context_parts)
 
-        # Create balanced prompt that uses context effectively
-        prompt = f"""You are a chaos engineering assistant. Use the provided context to answer the user's question about krknctl and chaos testing.
+        # Create strict prompt that enforces context-only responses
+        prompt = f"""You are a chaos engineering assistant specialized in krknctl commands. Use ONLY the provided context to answer questions.
 
 CONTEXT:
 {docs_content}
 
 QUESTION: {state["question"]}
 
-KRKNCTL SYNTAX RULES:
-1. krknctl ALWAYS follows this syntax: "krknctl run <scenario_name> --<option> value --<option> value"
-2. NEVER use --scenario=<name> - this syntax does NOT exist
-3. Find scenario names from the context documents (especially from paths like content/en/docs/scenarios/<scenario_name>/<scenario-name>-krknctl.md)
-4. Use scenario names and options EXACTLY as documented in the context - NEVER invent parameter names
-5. If suggesting a krknctl command, format it as: "SCENARIO: scenario-name-from-context"
-6. Only use parameters that are explicitly mentioned in the context documentation
-7. If you cannot find the exact parameters in the context, say so rather than guessing
-8. Always verify both scenario name and ALL options exist in the provided documentation before suggesting them
+CRITICAL RULES - FOLLOW STRICTLY:
+1. SCENARIO NAMES: Extract scenario names ONLY from the provided context documents. Look for:
+   - "krknctl run <scenario-name>" commands in examples
+   - "# krknctl Scenario: <scenario-name>" headers
+   - Command patterns in the retrieved documentation
 
-Answer:"""  # NOQA
+2. COMMAND SYNTAX: krknctl run <exact-scenario-name> --<parameter> <value>
+
+3. PARAMETER EXTRACTION: Use parameters ONLY if explicitly documented in the context with proper parameter descriptions
+
+4. RESPONSE FORMAT: If recommending a scenario, start with: "SCENARIO: <exact-scenario-name-from-context>"
+
+5. NEVER INVENT: Do not guess or create scenario names, parameters, or values not present in the context
+
+6. CONTEXT DEPENDENCY: If the context doesn't contain the information needed to answer the question, say so explicitly
+
+7. VERIFICATION: Before suggesting any command, verify both the scenario name and ALL parameters exist in the provided context documents
+
+Answer based ONLY on the context provided:"""  # NOQA
 
         try:
             # Balanced parameters for accuracy without over-restriction
