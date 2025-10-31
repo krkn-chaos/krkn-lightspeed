@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class FaissDocumentIndexer:
-    """Documentation indexer using our proven
-    FAISS + all-MiniLM-L6-v2 approach"""
+    """Documentation indexer using
+    FAISS + all-mpnet-base-v2 approach"""
 
     def __init__(self, home_dir: str = "data"):
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model = SentenceTransformer("all-mpnet-base-v2")
         self.documents = []
         self.embeddings = None
         self.index = None
@@ -27,18 +27,13 @@ class FaissDocumentIndexer:
     def scrape_krkn_docs(
         self, github_repo: str, repo_path: str
     ) -> List[Dict[str, Any]]:
-        """Fetch documentation by cloning GitHub repository"""
+        """Fetch scenarios documentation by cloning GitHub repository"""
         docs = []
 
         try:
             docs = self._clone_and_extract_docs(github_repo, repo_path)
 
-            # Add chaos testing guide with specific chunking strategy
-            chaos_guide = self._fetch_chaos_testing_guide(github_repo)
-            if chaos_guide:
-                docs.append(chaos_guide)
-
-            logger.info(f"Found {len(docs)} documents from GitHub repository")
+            logger.info(f"Found {len(docs)} scenario documents from GitHub repository")
 
         except Exception as e:
             logger.error(f"Error during GitHub repository cloning: {e}")
@@ -326,7 +321,8 @@ class FaissDocumentIndexer:
     def _extract_markdown_files(
         self, base_path: str, relative_docs_path: str
     ) -> List[Dict[str, Any]]:
-        """Recursively extract markdown files from directory"""
+        """Recursively extract markdown files from directory,
+        filtering only scenarios documentation"""
         docs = []
 
         try:
@@ -334,8 +330,15 @@ class FaissDocumentIndexer:
                 for file in files:
                     if file.endswith(".md"):
                         file_path = os.path.join(root, file)
+
+                        # Filter: only include files under scenarios directory
+                        rel_path = os.path.relpath(file_path, base_path)
+                        if not rel_path.startswith("scenarios/"):
+                            logger.debug(f"Skipping non-scenario file: {rel_path}")
+                            continue
+
                         # DEBUG: Log all markdown files found
-                        logger.info(f"Processing markdown file: {file_path}")
+                        logger.info(f"Processing scenario markdown file: {file_path}")
                         doc = self._process_markdown_file(
                             file_path, base_path, relative_docs_path
                         )

@@ -68,7 +68,7 @@ RUN mkdir -p /app/models && \
 
 # Pre-download embedding models to avoid runtime downloads
 RUN mkdir -p /root/.cache/huggingface/transformers && \
-    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; print('Downloading Qwen embedding model...'); model = SentenceTransformer('Qwen/Qwen3-Embedding-0.6B'); print('Qwen model cached successfully'); print('Downloading fallback embedding model...'); fallback = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); print('Fallback model cached successfully')" && \
+    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; print('Downloading primary embedding model...'); model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2'); print('Primary model cached successfully'); print('Downloading Qwen embedding model...'); fallback = SentenceTransformer('Qwen/Qwen3-Embedding-0.6B'); print('Qwen model cached successfully')" && \
     echo "Embedding models pre-downloaded successfully"
 
 # Copy application files from repository (NEW IMPLEMENTATION)

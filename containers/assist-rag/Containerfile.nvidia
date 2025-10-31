@@ -55,9 +55,9 @@ RUN mkdir -p /app/models && \
     ls -la /app/models/ && \
     [ $(stat -c%s /app/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf) -gt 1500000000 ] || (echo "Model download failed - file too small" && exit 1)
 
-# Download sentence transformer model (all-MiniLM-L6-v2)
+# Download sentence transformer model (all-mpnet-base-v2)
 RUN mkdir -p /root/.cache/huggingface/transformers && \
-    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')"
 
 # Copy application files from repository
 RUN cp /tmp/krkn-assist/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/ && \

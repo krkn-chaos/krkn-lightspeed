@@ -68,9 +68,9 @@ RUN mkdir -p /app/models && \
     ls -la /app/models/ && \
     [ $(stat -c%s /app/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf) -gt 1500000000 ] || (echo "Model download failed - file too small" && exit 1)
 
-# Pre-download embedding models (UPDATED to use all-MiniLM-L6-v2 primarily)
+# Pre-download embedding models (UPDATED to use all-mpnet-base-v2 primarily)
 RUN mkdir -p /root/.cache/huggingface/transformers && \
-    python3 -c "from sentence_transformers import SentenceTransformer; print('Downloading all-MiniLM-L6-v2 embedding model...'); model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); print('Embedding model cached successfully')" && \
+    python3 -c "from sentence_transformers import SentenceTransformer; print('Downloading all-mpnet-base-v2 embedding model...'); model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2'); print('Embedding model cached successfully')" && \
     echo "Embedding model pre-downloaded successfully"
 
 # Copy application files from repository (NEW IMPLEMENTATION)
