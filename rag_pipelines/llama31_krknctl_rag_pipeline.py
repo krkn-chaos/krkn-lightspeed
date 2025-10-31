@@ -22,8 +22,20 @@ def detect_gpu_type():
     appropriate llama.cpp parameters"""
     logger.info("Detecting GPU type for optimal llama.cpp backend...")
 
+    # Log all device checks for debugging
+    nvidia_dev0 = os.path.exists("/dev/nvidia0")
+    nvidia_ctl = os.path.exists("/dev/nvidiactl")
+    dri_card0 = os.path.exists("/dev/dri/card0")
+    dri_render = os.path.exists("/dev/dri/renderD128")
+
+    logger.info(f"Device detection results:")
+    logger.info(f"  /dev/nvidia0: {nvidia_dev0}")
+    logger.info(f"  /dev/nvidiactl: {nvidia_ctl}")
+    logger.info(f"  /dev/dri/card0: {dri_card0}")
+    logger.info(f"  /dev/dri/renderD128: {dri_render}")
+
     # Check for NVIDIA GPU devices
-    if os.path.exists("/dev/nvidia0") or os.path.exists("/dev/nvidiactl"):
+    if nvidia_dev0 or nvidia_ctl:
         logger.info("NVIDIA GPU devices detected - using CUDA backend")
         return {
             "backend": "cuda",
@@ -33,18 +45,18 @@ def detect_gpu_type():
         }
 
     # Check for DRI devices (Apple Silicon or other GPUs with Vulkan)
-    if os.path.exists("/dev/dri/card0") or os.path.exists(
-        "/dev/dri/renderD128"
-    ):
+    if dri_card0 or dri_render:
         logger.info("DRI devices detected - using Vulkan backend")
         return {"backend": "vulkan", "n_gpu_layers": -1, "verbose": False}
 
     # Fallback to CPU
     logger.info("No GPU detected - using CPU backend")
+    cpu_count = os.cpu_count()
+    logger.info(f"CPU threads available: {cpu_count}")
     return {
         "backend": "cpu",
         "n_gpu_layers": 0,
-        "n_threads": os.cpu_count(),
+        "n_threads": cpu_count,
         "verbose": False,
     }
 
@@ -103,6 +115,17 @@ def load_llama31_krknctl_rag_pipeline(
 
         llama_model = Llama(**llama_params)
         logger.info("Llama 3.2 3B model loaded successfully")
+
+        # Log detailed hardware configuration
+        logger.info("=== HARDWARE CONFIGURATION ===")
+        logger.info(f"Backend: {gpu_config['backend']}")
+        logger.info(f"GPU Layers: {gpu_config['n_gpu_layers']}")
+        if 'main_gpu' in gpu_config:
+            logger.info(f"Main GPU: {gpu_config['main_gpu']}")
+        if 'n_threads' in gpu_config:
+            logger.info(f"CPU Threads: {gpu_config['n_threads']}")
+        logger.info(f"Model Context Size: {llama_params['n_ctx']}")
+        logger.info("===============================")
     else:
         logger.warning(f"Llama model not found at {model_path}")
 
@@ -161,17 +184,40 @@ CRITICAL RULES - FOLLOW STRICTLY:
 Answer based ONLY on the context provided:"""  # NOQA
 
         try:
+            # Log inference parameters for debugging
+            inference_params = {
+                "max_tokens": 500,
+                "temperature": 0.1,
+                "top_p": 0.9,
+                "repeat_penalty": 1.15,
+                "echo": False,
+            }
+            logger.info("=== INFERENCE PARAMETERS ===")
+            for param, value in inference_params.items():
+                logger.info(f"{param}: {value}")
+            logger.info(f"Prompt length: {len(prompt)} characters")
+            logger.info("=============================")
+
             # Balanced parameters for accuracy without over-restriction
             response = llama_model(
                 prompt,
-                max_tokens=500,  # Enough space for complete answers
-                temperature=0.1,  # Low but not zero for some flexibility
-                top_p=0.9,  # Good sampling quality
-                repeat_penalty=1.15,  # Moderate penalty
-                echo=False,
+                **inference_params
             )
 
             generated_response = response["choices"][0]["text"].strip()
+
+            # Log inference performance metrics
+            usage = response.get("usage", {})
+            logger.info("=== INFERENCE METRICS ===")
+            logger.info(f"Prompt tokens: {usage.get('prompt_tokens', 'unknown')}")
+            logger.info(f"Completion tokens: {usage.get('completion_tokens', 'unknown')}")
+            logger.info(f"Total tokens: {usage.get('total_tokens', 'unknown')}")
+            if 'timings' in response:
+                timings = response['timings']
+                logger.info(f"Prompt eval time: {timings.get('prompt_eval_time', 'unknown')}ms")
+                logger.info(f"Eval time: {timings.get('eval_time', 'unknown')}ms")
+                logger.info(f"Tokens per second: {timings.get('tokens_per_second', 'unknown')}")
+            logger.info("=========================")
 
             # DEBUG: Print generated response
             print("\n[DEBUG] GENERATED RESPONSE:")
