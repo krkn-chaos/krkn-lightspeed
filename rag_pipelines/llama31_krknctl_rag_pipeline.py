@@ -118,6 +118,7 @@ def load_llama31_krknctl_rag_pipeline(
 
         # Log detailed hardware configuration
         logger.info("=== HARDWARE CONFIGURATION ===")
+        logger.info("🔄 CODE VERSION: 2024-10-31-v3-VULKAN-TUNED") # Version marker
         logger.info(f"Backend: {gpu_config['backend']}")
         logger.info(f"GPU Layers: {gpu_config['n_gpu_layers']}")
         if 'main_gpu' in gpu_config:
@@ -184,20 +185,46 @@ CRITICAL RULES - FOLLOW STRICTLY:
 Answer based ONLY on the context provided:"""  # NOQA
 
         try:
-            # Use NVIDIA's proven parameters for ALL backends for consistency
-            # Different backends, same parameters = better cross-platform quality
-            inference_params = {
-                "max_tokens": 500,
-                "temperature": 0.1,     # NVIDIA's proven value
-                "top_p": 0.9,           # NVIDIA's proven value
-                "repeat_penalty": 1.15, # NVIDIA's proven value
-                "echo": False,
-                # Note: Removed seed to allow natural randomness
-            }
-
+            # Backend-optimized parameters for consistent quality across platforms
             backend = gpu_config.get("backend", "cpu")
-            logger.info(f"Using NVIDIA-proven parameters across all backends")
+
+            if backend == "cuda":
+                # CUDA: Proven parameters
+                inference_params = {
+                    "max_tokens": 500,
+                    "temperature": 0.1,
+                    "top_p": 0.9,
+                    "repeat_penalty": 1.15,
+                    "echo": False,
+                }
+                logger.info("Using standard CUDA parameters")
+
+            elif backend == "vulkan":
+                # Vulkan: Fine-tuned for better instruction following
+                inference_params = {
+                    "max_tokens": 500,
+                    "temperature": 0.08,    # Slightly lower for more focused
+                    "top_p": 0.85,          # More selective sampling
+                    "repeat_penalty": 1.2,  # Stronger penalty
+                    "top_k": 40,            # Add top_k for better quality
+                    "echo": False,
+                }
+                logger.info("Using Vulkan-optimized parameters")
+
+            else:  # CPU
+                # CPU: Conservative but effective
+                inference_params = {
+                    "max_tokens": 500,
+                    "temperature": 0.08,
+                    "top_p": 0.85,
+                    "repeat_penalty": 1.2,
+                    "top_k": 40,
+                    "echo": False,
+                }
+                logger.info("Using CPU-optimized parameters")
+
             logger.info("=== INFERENCE PARAMETERS ===")
+            logger.info("🎯 VULKAN-TUNED VERSION ACTIVE") # Inference marker
             logger.info(f"Backend: {backend}")
             for param, value in inference_params.items():
                 logger.info(f"{param}: {value}")
