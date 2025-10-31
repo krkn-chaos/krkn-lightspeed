@@ -50,27 +50,31 @@ RUN git clone https://github.com/krkn-chaos/krkn-assist.git /tmp/krkn-assist && 
 RUN git clone https://github.com/krkn-chaos/krkn-hub.git /tmp/krkn-hub && \
     echo "krkn-hub repository cloned successfully"
 
+# Create and activate virtual environment for consistency with NVIDIA container
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
 # Install PyTorch CPU-only FIRST to avoid CUDA dependencies for Apple Silicon
-RUN pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+RUN /app/venv/bin/pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 # Install remaining dependencies from requirements_krknctl.txt
-RUN pip3 install --no-cache-dir -r /tmp/krkn-assist/requirements_krknctl.txt
+RUN /app/venv/bin/pip install --no-cache-dir -r /tmp/krkn-assist/requirements_krknctl.txt
 
 # Compile and install llama-cpp-python with Vulkan support (Apple Silicon optimized) - PRESERVED
-RUN CMAKE_ARGS="-DGGML_VULKAN=on" pip3 install --no-cache-dir --verbose llama-cpp-python
+RUN CMAKE_ARGS="-DGGML_VULKAN=on" /app/venv/bin/pip install --no-cache-dir --verbose llama-cpp-python
 
 # Install huggingface-hub for reliable model downloads (PRESERVED)
-RUN pip3 install --no-cache-dir huggingface-hub
+RUN /app/venv/bin/pip install --no-cache-dir huggingface-hub
 
 # Download LLM and embedding models (3B model for better performance)
 RUN mkdir -p /app/models && \
-    python3 -c "import huggingface_hub; huggingface_hub.hf_hub_download(repo_id='bartowski/Llama-3.2-3B-Instruct-GGUF', filename='Llama-3.2-3B-Instruct-Q4_K_M.gguf', local_dir='/app/models', local_dir_use_symlinks=False)" && \
+    /app/venv/bin/python -c "import huggingface_hub; huggingface_hub.hf_hub_download(repo_id='bartowski/Llama-3.2-3B-Instruct-GGUF', filename='Llama-3.2-3B-Instruct-Q4_K_M.gguf', local_dir='/app/models', local_dir_use_symlinks=False)" && \
     ls -la /app/models/ && \
     [ $(stat -c%s /app/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf) -gt 1500000000 ] || (echo "Model download failed - file too small" && exit 1)
 
 # Pre-download embedding models (UPDATED to use multi-qa-mpnet-base-dot-v1)
 RUN mkdir -p /root/.cache/huggingface/transformers && \
-    python3 -c "from sentence_transformers import SentenceTransformer; print('Downloading multi-qa-mpnet-base-dot-v1 embedding model...'); model = SentenceTransformer('sentence-transformers/multi-qa-mpnet-base-dot-v1'); print('Embedding model cached successfully')" && \
+    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; print('Downloading multi-qa-mpnet-base-dot-v1 embedding model...'); model = SentenceTransformer('sentence-transformers/multi-qa-mpnet-base-dot-v1'); print('Embedding model cached successfully')" && \
     echo "Embedding model pre-downloaded successfully"
 
 # Copy application files from repository (NEW IMPLEMENTATION)
@@ -82,7 +86,7 @@ RUN cp /tmp/krkn-assist/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/ && \
 # Pre-build FAISS index during container build to avoid runtime indexing delay
 RUN mkdir -p /app/faiss_index && \
     cd /app && \
-    python3 -c "import sys; sys.path.append('/app'); from utils.faiss_document_indexer import FaissDocumentIndexer; print('Starting document indexing...'); indexer = FaissDocumentIndexer(); indexer.build_and_save_index('https://github.com/krkn-chaos/website', 'content/en/docs', 'faiss_index', 'https://github.com/krkn-chaos/krkn-hub'); print('Indexing completed!')" && \
+    /app/venv/bin/python -c "import sys; sys.path.append('/app'); from utils.faiss_document_indexer import FaissDocumentIndexer; print('Starting document indexing...'); indexer = FaissDocumentIndexer(); indexer.build_and_save_index('https://github.com/krkn-chaos/website', 'content/en/docs', 'faiss_index', 'https://github.com/krkn-chaos/krkn-hub'); print('Indexing completed!')" && \
     echo "FAISS index pre-built successfully"
 
 # Copy krknctl help and entrypoint
