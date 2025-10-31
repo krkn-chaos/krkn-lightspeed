@@ -18,7 +18,7 @@ class FaissDocumentIndexer:
     FAISS + all-mpnet-base-v2 approach"""
 
     def __init__(self, home_dir: str = "data"):
-        self.model = SentenceTransformer("all-mpnet-base-v2")
+        self.model = SentenceTransformer("sentence-transformers/multi-qa-mpnet-base-dot-v1")
         self.documents = []
         self.embeddings = None
         self.index = None
