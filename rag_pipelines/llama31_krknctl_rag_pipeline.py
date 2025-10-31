@@ -118,7 +118,7 @@ def load_llama31_krknctl_rag_pipeline(
 
         # Log detailed hardware configuration
         logger.info("=== HARDWARE CONFIGURATION ===")
-        logger.info("🔄 CODE VERSION: 2024-10-31-v3-VULKAN-TUNED") # Version marker
+        logger.info("🔄 CODE VERSION: 2024-10-31-v4-VULKAN-EXTREME") # Version marker
         logger.info(f"Backend: {gpu_config['backend']}")
         logger.info(f"GPU Layers: {gpu_config['n_gpu_layers']}")
         if 'main_gpu' in gpu_config:
@@ -200,16 +200,17 @@ Answer based ONLY on the context provided:"""  # NOQA
                 logger.info("Using standard CUDA parameters")
 
             elif backend == "vulkan":
-                # Vulkan: Fine-tuned for better instruction following
+                # Vulkan: EXTREME conservative parameters for better instruction following
                 inference_params = {
                     "max_tokens": 500,
-                    "temperature": 0.08,    # Slightly lower for more focused
-                    "top_p": 0.85,          # More selective sampling
-                    "repeat_penalty": 1.2,  # Stronger penalty
-                    "top_k": 40,            # Add top_k for better quality
+                    "temperature": 0.01,    # Almost deterministic
+                    "top_p": 0.7,           # Very selective
+                    "repeat_penalty": 1.3,  # Strong penalty
+                    "top_k": 20,            # Very limited choices
+                    "min_p": 0.1,           # New parameter - minimum probability
                     "echo": False,
                 }
-                logger.info("Using Vulkan-optimized parameters")
+                logger.info("Using EXTREME Vulkan-optimized parameters")
 
             else:  # CPU
                 # CPU: Conservative but effective
