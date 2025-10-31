@@ -420,23 +420,30 @@ class FaissDocumentIndexer:
     def chunk_by_size(
         self, doc: Dict[str, Any], characters: int = 512
     ) -> List[Dict[str, Any]]:
-        """Split document by character count with overlap"""
+        """Split document by character count without overlap for cleaner chunks"""
         chunks = []
         content = doc["content"]
-        overlap = characters // 4  # 25% overlap to preserve context
 
-        # Split into chunks with overlap
-        start = 0
-        while start < len(content):
-            end = start + characters
-            chunk_content = content[start:end]
+        # For small documents, keep them whole
+        if len(content) <= characters * 1.5:
+            chunks.append({
+                "url": doc["url"],
+                "title": doc["title"],
+                "content": content,
+                "source": doc["source"],
+                "chunk_type": "whole_document",
+            })
+            return chunks
+
+        # Split into chunks without overlap
+        for i in range(0, len(content), characters):
+            chunk_content = content[i : i + characters]  # NOQA
 
             # Try to break at word boundaries to avoid cutting words
-            if end < len(content) and not content[end].isspace():
+            if i + characters < len(content) and not content[i + characters].isspace():
                 last_space = chunk_content.rfind(' ')
                 if last_space > characters // 2:  # Only if we don't lose too much
                     chunk_content = chunk_content[:last_space]
-                    end = start + last_space
 
             if len(chunk_content.strip()) > 50:  # Only keep meaningful chunks
                 chunks.append(
@@ -445,14 +452,9 @@ class FaissDocumentIndexer:
                         "title": doc["title"],
                         "content": chunk_content.strip(),
                         "source": doc["source"],
-                        "chunk_type": "size_based_overlap",
+                        "chunk_type": "size_based_clean",
                     }
                 )
-
-            # Move start position with overlap
-            start = max(start + characters - overlap, end)
-            if start >= len(content):
-                break
 
         return chunks
 
