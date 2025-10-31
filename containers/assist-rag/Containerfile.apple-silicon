@@ -122,11 +122,11 @@ RUN rm -rf /app/rag_pipelines /app/fastapi_app.py /app/utils && \
     git clone https://github.com/krkn-chaos/krkn-assist.git /tmp/krkn-assist-fresh && \
     cd /tmp/krkn-assist-fresh && \
     git checkout krknctl_assist_light && \
-    cp /tmp/krkn-lightspeed-fresh/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/rag_pipelines/ && \
-    cp /tmp/krkn-lightspeed-fresh/fastapi_app.py /app/ && \
-    cp -r /tmp/krkn-lightspeed-fresh/utils /app/ && \
-    rm -rf /tmp/krkn-lightspeed-fresh && \
-    echo "Fresh krkn-lightspeed code updated successfully at version: $CODE_VERSION"
+    cp /tmp/krkn-assist-fresh/rag_pipelines/llama31_krknctl_rag_pipeline.py /app/rag_pipelines/ && \
+    cp /tmp/krkn-assist-fresh/fastapi_app.py /app/ && \
+    cp -r /tmp/krkn-assist-fresh/utils /app/ && \
+    rm -rf /tmp/krkn-assist-fresh && \
+    echo "Fresh krkn-assist code updated successfully at version: $CODE_VERSION"
 
 # Fresh clone of krkn-hub repository for scenario definitions
 RUN git clone https://github.com/krkn-chaos/krkn-hub.git /tmp/krkn-hub-fresh && \
