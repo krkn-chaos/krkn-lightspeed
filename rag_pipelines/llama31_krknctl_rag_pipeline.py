@@ -136,7 +136,7 @@ def load_llama31_krknctl_rag_pipeline(
         return {"context": retrieved_docs}
 
     def generate(state: State):
-        """Generate response using llama.cpp with conservative parameters"""
+        """Generate response using llama.cpp with backend-optimized parameters"""
         if not llama_model:
             return {
                 "answer": "Llama model not available. Please check model path."
@@ -184,15 +184,40 @@ CRITICAL RULES - FOLLOW STRICTLY:
 Answer based ONLY on the context provided:"""  # NOQA
 
         try:
-            # Log inference parameters for debugging
-            inference_params = {
+            # Backend-specific parameter optimization for consistent quality
+            base_params = {
                 "max_tokens": 500,
-                "temperature": 0.1,
-                "top_p": 0.9,
-                "repeat_penalty": 1.15,
                 "echo": False,
+                "seed": 42,  # Fixed seed for determinism
             }
+
+            # Optimize parameters based on backend for consistent quality
+            backend = gpu_config.get("backend", "cpu")
+            if backend == "cuda":
+                # CUDA: Standard parameters (proven to work well)
+                backend_params = {
+                    "temperature": 0.1,
+                    "top_p": 0.9,
+                    "repeat_penalty": 1.15,
+                }
+            elif backend == "vulkan":
+                # Vulkan: More conservative parameters for better instruction following
+                backend_params = {
+                    "temperature": 0.05,  # Lower for more focused responses
+                    "top_p": 0.8,         # More selective sampling
+                    "repeat_penalty": 1.2, # Stronger penalty for repetition
+                }
+            else:  # CPU fallback
+                # CPU: Conservative parameters due to slower processing
+                backend_params = {
+                    "temperature": 0.05,
+                    "top_p": 0.8,
+                    "repeat_penalty": 1.2,
+                }
+
+            inference_params = {**base_params, **backend_params}
             logger.info("=== INFERENCE PARAMETERS ===")
+            logger.info(f"Backend: {backend}")
             for param, value in inference_params.items():
                 logger.info(f"{param}: {value}")
             logger.info(f"Prompt length: {len(prompt)} characters")
