@@ -129,15 +129,22 @@ app = FastAPI(
 
 def extract_scenario_name(response_text: str) -> Optional[str]:
     """Extract scenario name from response if SCENARIO: tag is present"""
-    # More flexible regex that captures scenario names with dashes,
-    # optionally wrapped in quotes, backticks, or other symbols
-    match = re.search(
+    # First try to extract from 'krknctl run <scenario-name>' pattern
+    krknctl_match = re.search(
+        r'krknctl\s+run\s+([a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]|[a-zA-Z0-9]+)',
+        response_text,
+    )
+    if krknctl_match:
+        return krknctl_match.group(1).strip()
+
+    # Fallback to SCENARIO: pattern
+    scenario_match = re.search(
         r'SCENARIO:\s*[`"\']*([a-zA-Z0-9][a-zA-Z0-9\-_]*'
         r'[a-zA-Z0-9]|[a-zA-Z0-9]+)[`"\']*',
         response_text,
     )
-    if match:
-        return match.group(1).strip()
+    if scenario_match:
+        return scenario_match.group(1).strip()
     return None
 
 
