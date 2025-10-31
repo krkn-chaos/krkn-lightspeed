@@ -184,38 +184,19 @@ CRITICAL RULES - FOLLOW STRICTLY:
 Answer based ONLY on the context provided:"""  # NOQA
 
         try:
-            # Backend-specific parameter optimization for consistent quality
-            base_params = {
+            # Use NVIDIA's proven parameters for ALL backends for consistency
+            # Different backends, same parameters = better cross-platform quality
+            inference_params = {
                 "max_tokens": 500,
+                "temperature": 0.1,     # NVIDIA's proven value
+                "top_p": 0.9,           # NVIDIA's proven value
+                "repeat_penalty": 1.15, # NVIDIA's proven value
                 "echo": False,
-                "seed": 42,  # Fixed seed for determinism
+                # Note: Removed seed to allow natural randomness
             }
 
-            # Optimize parameters based on backend for consistent quality
             backend = gpu_config.get("backend", "cpu")
-            if backend == "cuda":
-                # CUDA: Standard parameters (proven to work well)
-                backend_params = {
-                    "temperature": 0.1,
-                    "top_p": 0.9,
-                    "repeat_penalty": 1.15,
-                }
-            elif backend == "vulkan":
-                # Vulkan: More conservative parameters for better instruction following
-                backend_params = {
-                    "temperature": 0.05,  # Lower for more focused responses
-                    "top_p": 0.8,         # More selective sampling
-                    "repeat_penalty": 1.2, # Stronger penalty for repetition
-                }
-            else:  # CPU fallback
-                # CPU: Conservative parameters due to slower processing
-                backend_params = {
-                    "temperature": 0.05,
-                    "top_p": 0.8,
-                    "repeat_penalty": 1.2,
-                }
-
-            inference_params = {**base_params, **backend_params}
+            logger.info(f"Using NVIDIA-proven parameters across all backends")
             logger.info("=== INFERENCE PARAMETERS ===")
             logger.info(f"Backend: {backend}")
             for param, value in inference_params.items():
