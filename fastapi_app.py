@@ -221,8 +221,13 @@ async def chat_completions(request: QueryRequest):
                 status_code=400, detail="No user message found in request"
             )
 
-        # Execute the pipeline
+        # Execute the pipeline with timing
+        query_start_time = time.time()
+        pipeline_start_time = time.time()
         result = rag_pipeline.invoke({"question": user_query})
+        pipeline_end_time = time.time()
+
+        pipeline_time = pipeline_end_time - pipeline_start_time
 
         # Extract response and context
         response_text = result.get("answer", "No response generated")
@@ -240,6 +245,53 @@ async def chat_completions(request: QueryRequest):
         )
         completion_tokens = len(response_text.split())
         total_tokens = prompt_tokens + completion_tokens
+
+        # Calculate timing metrics and tokens per second
+        query_end_time = time.time()
+        total_query_time = query_end_time - query_start_time
+
+        tokens_per_second = completion_tokens / pipeline_time if pipeline_time > 0 else 0
+
+        # Get retrieval metrics from pipeline
+        retrieval_metrics = {}
+        if hasattr(rag_pipeline, 'get_last_search_metrics'):
+            retrieval_metrics = rag_pipeline.get_last_search_metrics()
+
+        # Calculate LLM-only generation time (pipeline - retrieval)
+        retrieval_time = retrieval_metrics.get('total_retrieval_time', 0)
+        llm_generation_time = pipeline_time - retrieval_time if retrieval_time > 0 else pipeline_time
+        processing_overhead = total_query_time - pipeline_time
+
+        # Unified performance metrics report
+        logger.info("="*60)
+        logger.info("QUERY PERFORMANCE METRICS")
+        logger.info("="*60)
+        logger.info(f"Query: {user_query[:100]}{'...' if len(user_query) > 100 else ''}")
+        logger.info(f"Total Query Time: {total_query_time:.3f}s")
+        logger.info(f"Pipeline Time:    {pipeline_time:.3f}s")
+        logger.info(f"Processing Overhead: {processing_overhead:.3f}s")
+        logger.info("-"*40)
+        logger.info("TIMING BREAKDOWN:")
+        logger.info(f"  • Embedding Creation: {retrieval_metrics.get('embedding_time', 0):.3f}s")
+        logger.info(f"  • Vector Search:      {retrieval_metrics.get('search_time', 0):.3f}s")
+        logger.info(f"  • Total Retrieval:    {retrieval_time:.3f}s")
+        logger.info(f"  • LLM Generation:     {llm_generation_time:.3f}s")
+        logger.info("-"*40)
+        logger.info("RETRIEVAL METRICS:")
+        logger.info(f"  • Documents Found:    {retrieval_metrics.get('documents_found', 0)}")
+        logger.info(f"  • Top Relevance:      {retrieval_metrics.get('top_score', 0):.3f}")
+        logger.info(f"  • Avg Relevance:      {retrieval_metrics.get('avg_relevance_score', 0):.3f}")
+        logger.info("-"*40)
+        logger.info("TOKEN METRICS:")
+        logger.info(f"  • Input Tokens:       {prompt_tokens}")
+        logger.info(f"  • Output Tokens:      {completion_tokens}")
+        logger.info(f"  • Total Tokens:       {total_tokens}")
+        logger.info(f"  • Generation Speed:   {tokens_per_second:.1f} tokens/sec")
+        logger.info(f"  • Response Length:    {len(response_text)} chars")
+        logger.info("-"*40)
+        logger.info("EXTRACTED INFO:")
+        logger.info(f"  • Scenario Detected:  {scenario_name or 'None'}")
+        logger.info("="*60)
 
         return QueryResponse(
             id=response_id,

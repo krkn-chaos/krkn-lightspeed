@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from typing import List
+import time
+from typing import List, Dict, Any
 import faiss
 from sentence_transformers import SentenceTransformer
 from langchain_core.documents import Document
@@ -18,6 +19,7 @@ class FAISSVectorStore:
         self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
         self.index = None
         self.documents = []
+        self.last_search_metrics = {}
         self.load_index()
 
     def load_index(self):
@@ -37,36 +39,23 @@ class FAISSVectorStore:
         with open(docs_path, "r") as f:
             self.documents = json.load(f)
 
-        # DEBUG: Print indexed documents summary
-        print("\n[DEBUG] INDEXED DOCUMENTS SUMMARY:")
-        print(f"Total documents: {len(self.documents)}")
-        doc_types = {}
-        for doc in self.documents:
-            doc_type = (
-                "website"
-                if "krkn-chaos.dev" in doc.get("url", "")
-                else "other"
-            )
-            doc_types[doc_type] = doc_types.get(doc_type, 0) + 1
-        for doc_type, count in doc_types.items():
-            print(f"- {doc_type}: {count} documents")
-        print(
-            f"Sample document titles: "
-            f"{[doc.get('title', 'untitled')[:50] for doc in self.documents[:5]]}"  # NOQA
-        )
-        print("[DEBUG] Index loaded successfully\n")
+        logger.info(f"Index loaded: {len(self.documents)} documents indexed")
 
     def similarity_search(self, query: str, k: int = 5) -> List[Document]:
         """Search for similar documents and return as langchain Documents"""
         if not self.index:
             raise RuntimeError("Index not loaded")
 
-        # Create query embedding
+        # Time embedding creation
+        embedding_start = time.time()
         query_embedding = self.model.encode([query])
         faiss.normalize_L2(query_embedding)
+        embedding_time = time.time() - embedding_start
 
-        # Search in FAISS index
+        # Time FAISS search
+        search_start = time.time()
         scores, indices = self.index.search(query_embedding, k)
+        search_time = time.time() - search_start
 
         # Convert to langchain Documents
         documents = []
@@ -86,16 +75,16 @@ class FAISSVectorStore:
                 )
                 documents.append(doc)
 
-        # DEBUG: Print retrieved context
-        print(f"\n[DEBUG] RETRIEVED CONTEXT for query: '{query}'")
-        print(f"Found {len(documents)} relevant documents:")
-        for i, doc in enumerate(documents):
-            print(
-                f"- Doc {i+1}: {doc.metadata.get('title', 'untitled')[:50]}"
-                f" (score: {doc.metadata.get('relevance_score', 0):.3f})"
-            )
-            print(f"  Content preview: {doc.page_content[:100]}...")
-        print("[DEBUG] Context retrieval completed\n")
+        # Store metrics for external access
+        self.last_search_metrics = {
+            "embedding_time": embedding_time,
+            "search_time": search_time,
+            "total_retrieval_time": embedding_time + search_time,
+            "documents_found": len(documents),
+            "avg_relevance_score": sum(doc.metadata.get('relevance_score', 0) for doc in documents) / len(documents) if documents else 0,
+            "top_score": documents[0].metadata.get('relevance_score', 0) if documents else 0
+        }
+
 
         return documents
 
@@ -127,3 +116,9 @@ class SimpleStateGraph:
         if hasattr(self.vector_store, "documents"):
             return len(self.vector_store.documents)
         return 0
+
+    def get_last_search_metrics(self) -> Dict[str, Any]:
+        """Get metrics from the last search operation"""
+        if hasattr(self.vector_store, "last_search_metrics"):
+            return self.vector_store.last_search_metrics
+        return {}
