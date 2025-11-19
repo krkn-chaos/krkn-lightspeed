@@ -16,7 +16,9 @@ class FAISSVectorStore:
 
     def __init__(self, index_dir: str):
         self.index_dir = index_dir
-        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
+        self.model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L12-v2"
+        )
         self.index = None
         self.documents = []
         self.last_search_metrics = {}
@@ -64,14 +66,20 @@ class FAISSVectorStore:
                 doc_data = self.documents[idx]
 
                 # Create langchain Document with metadata
+                metadata = {
+                    "source": doc_data["source"],
+                    "title": doc_data["title"],
+                    "url": doc_data["url"],
+                    "relevance_score": float(score),
+                }
+
+                # Include scenario_name if present
+                if "scenario_name" in doc_data:
+                    metadata["scenario_name"] = doc_data["scenario_name"]
+
                 doc = Document(
                     page_content=doc_data["content"],
-                    metadata={
-                        "source": doc_data["source"],
-                        "title": doc_data["title"],
-                        "url": doc_data["url"],
-                        "relevance_score": float(score),
-                    },
+                    metadata=metadata,
                 )
                 documents.append(doc)
 
@@ -81,10 +89,20 @@ class FAISSVectorStore:
             "search_time": search_time,
             "total_retrieval_time": embedding_time + search_time,
             "documents_found": len(documents),
-            "avg_relevance_score": sum(doc.metadata.get('relevance_score', 0) for doc in documents) / len(documents) if documents else 0,
-            "top_score": documents[0].metadata.get('relevance_score', 0) if documents else 0
+            "avg_relevance_score": (
+                sum(
+                    doc.metadata.get("relevance_score", 0) for doc in documents
+                )
+                / len(documents)
+                if documents
+                else 0
+            ),
+            "top_score": (
+                documents[0].metadata.get("relevance_score", 0)
+                if documents
+                else 0
+            ),
         }
-
 
         return documents
 
