@@ -12,7 +12,7 @@ https://python.langchain.com/docs/tutorials/rag/
 """
 
 
-def load_llama27_rag_pipeline(
+def load_llama32_rag_pipeline(
     github_repo="https://github.com/krkn-chaos/website",
     repo_path="content/en/docs",
     collection_name="krkn-docs",
@@ -21,7 +21,7 @@ def load_llama27_rag_pipeline(
     chunking_strategy="default",
 ):
     """# NOQA
-    Load the Llama 2.7 RAG pipeline with ChromaDB persistence
+    Load the Llama 3.2 RAG pipeline with ChromaDB persistence
 
     Args:
         data_path: List of documents can be path to documents folder and/or a list of Urls
@@ -30,11 +30,21 @@ def load_llama27_rag_pipeline(
         embedding_model: Embedding model key (from embedding_config.py) or model name
         chunking_strategy: Chunking strategy key (from embedding_config.py)
     """
-    # load and chunk contents of thepytohnPDF
 
+    # Get chunking configuration
     chunking_config = get_chunking_config(chunking_strategy)
+
+    print(f"Loading documents from: {github_repo}")
+
+    all_splits = clone_locally(
+        github_repo,
+        repo_path,
+        **chunking_config,
+    )
+    print(f"Loaded and split {len(all_splits)} document chunks")
+    # embed and store in vector database
     embedding_model_instance = get_embedding_model(embedding_model)
-    all_splits = clone_locally(github_repo, repo_path, chunking_config)
+
     print(f"Setting up ChromaDB collection: {collection_name}")
     vector_store = load_or_create_chroma_collection(
         collection_name=collection_name,
@@ -46,18 +56,27 @@ def load_llama27_rag_pipeline(
     # Define prompt for question-answering
     print("Loading RAG prompt template...")
     prompt_text = (
-        "You are an assistant for question-answering tasks. Use the "
-        "following pieces of retrieved context to answer the question. "
-        "If you don't know the answer, just say that you don't know. "
-        "Use three sentences maximum and keep the answer concise.\n\n"
+        "You are a technical documentation assistant for Krkn chaos "
+        "engineering.\n\n"
+        "Guidelines:\n"
+        "- Provide comprehensive, detailed answers using ALL relevant "
+        "information from the context\n"
+        "- Explain what each scenario/feature does and when to use it\n"
+        "- Include commands, parameters, configuration options, and "
+        "examples\n"
+        "- Structure the response with clear sections and bullet points\n"
+        "- Ignore metadata (dates, weights, page titles) - focus on "
+        "technical content only\n"
+        "- Do NOT add conversational filler like \"Let me know if you "
+        "need more help\"\n\n"
         "Question: {question}\n\n"
-        "Context: {context}\n\n"
+        "Context:\n{context}\n\n"
         "Answer:"
     )
     prompt = ChatPromptTemplate.from_messages([("human", prompt_text)])
 
     print("Initializing Ollama LLM...")
-    llm = OllamaLLM(model="llama2:7b", base_url="http://127.0.0.1:11434")
+    llm = OllamaLLM(model="llama3.2", base_url="http://127.0.0.1:11434")
 
     print("Building state graph...")
     graph = build_state_graph(vector_store, prompt, llm)

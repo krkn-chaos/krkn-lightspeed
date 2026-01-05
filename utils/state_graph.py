@@ -12,7 +12,7 @@ def build_state_graph(vector_store, prompt, llm):
 
     # Define application steps
     def retrieve(state: State):
-        retrieved_docs = vector_store.similarity_search(state["question"], k=1)
+        retrieved_docs = vector_store.similarity_search(state["question"], k=5)
         return {"context": retrieved_docs}
 
     def generate(state: State):

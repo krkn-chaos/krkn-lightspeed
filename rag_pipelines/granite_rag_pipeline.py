@@ -1,6 +1,6 @@
 import torch
-from langchain import hub
 from langchain_community.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langgraph.graph import START, StateGraph
@@ -34,9 +34,16 @@ def load_granite_rag_pipline():
     )
 
     # Define prompt for question-answering
-    # N.B. for non-US LangSmith endpoints, you may need to specify
-    # api_url="https://api.smith.langchain.com" in hub.pull.
-    prompt = hub.pull("rlm/rag-prompt")
+    prompt_text = (
+        "You are an assistant for question-answering tasks. Use the "
+        "following pieces of retrieved context to answer the question. "
+        "If you don't know the answer, just say that you don't know. "
+        "Use three sentences maximum and keep the answer concise.\n\n"
+        "Question: {question}\n\n"
+        "Context: {context}\n\n"
+        "Answer:"
+    )
+    prompt = ChatPromptTemplate.from_messages([("human", prompt_text)])
 
     # granite
     model_id = "ibm-granite/granite-3b-code-base-2k"

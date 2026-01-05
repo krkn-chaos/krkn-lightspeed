@@ -1,6 +1,6 @@
-from langchain import hub
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.llms import Ollama
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama import OllamaLLM
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -32,9 +32,18 @@ def load_rag_pipeline():
         documents=all_splits, embedding=embedding_model
     )
 
-    llm = Ollama(model="llama3.1", base_url="http://127.0.0.1:11434")
+    llm = OllamaLLM(model="llama3.1", base_url="http://127.0.0.1:11434")
 
-    prompt = hub.pull("rlm/rag-prompt")
+    prompt_text = (
+        "You are an assistant for question-answering tasks. Use the "
+        "following pieces of retrieved context to answer the question. "
+        "If you don't know the answer, just say that you don't know. "
+        "Use three sentences maximum and keep the answer concise.\n\n"
+        "Question: {question}\n\n"
+        "Context: {context}\n\n"
+        "Answer:"
+    )
+    prompt = ChatPromptTemplate.from_messages([("human", prompt_text)])
 
     def retrieve(state: State):
         retrieved_docs = vector_store.similarity_search(state["question"])
