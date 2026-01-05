@@ -1,5 +1,5 @@
-from langchain import hub
-from langchain_community.llms import Ollama
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama import OllamaLLM
 
 from utils.build_collections import load_or_create_chroma_collection
 from utils.document_loader import clone_locally
@@ -55,10 +55,28 @@ def load_llama31_rag_pipeline(
 
     # Define prompt for question-answering
     print("Loading RAG prompt template...")
-    prompt = hub.pull("rlm/rag-prompt")
+    prompt_text = (
+        "You are a technical documentation assistant for Krkn chaos "
+        "engineering.\n\n"
+        "Guidelines:\n"
+        "- Provide comprehensive, detailed answers using ALL relevant "
+        "information from the context\n"
+        "- Explain what each scenario/feature does and when to use it\n"
+        "- Include commands, parameters, configuration options, and "
+        "examples\n"
+        "- Structure the response with clear sections and bullet points\n"
+        "- Ignore metadata (dates, weights, page titles) - focus on "
+        "technical content only\n"
+        "- Do NOT add conversational filler like \"Let me know if you "
+        "need more help\"\n\n"
+        "Question: {question}\n\n"
+        "Context:\n{context}\n\n"
+        "Answer:"
+    )
+    prompt = ChatPromptTemplate.from_messages([("human", prompt_text)])
 
     print("Initializing Ollama LLM...")
-    llm = Ollama(model="llama3.1", base_url="http://127.0.0.1:11434")
+    llm = OllamaLLM(model="llama3.1", base_url="http://127.0.0.1:11434")
 
     print("Building state graph...")
     graph = build_state_graph(vector_store, prompt, llm)
