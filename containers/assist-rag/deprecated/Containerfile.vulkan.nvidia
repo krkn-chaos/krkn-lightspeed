@@ -1,0 +1,120 @@
+FROM registry.fedoraproject.org/fedora:40
+
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PATH=/opt/venv/bin:$PATH
+
+# ------------------------------------------------------------
+# MANDATORY RUNTIME SECTION
+# Everything above the debug line is required for Vulkan runtime
+# ------------------------------------------------------------
+
+RUN dnf -y update && \
+    dnf -y install \
+      python3 \
+      python3-pip \
+      python3-devel \
+      python3-virtualenv \
+      git \
+      cmake \
+      ninja-build \
+      gcc \
+      gcc-c++ \
+      make \
+      pkgconf-pkg-config \
+      vulkan-loader \
+      vulkan-loader-devel \
+      vulkan-headers \
+      glslc \
+      libXext && \
+    dnf clean all
+
+WORKDIR /app
+
+RUN python3 -m venv /opt/venv && \
+    pip install --upgrade pip setuptools wheel
+
+# compile llama.cpp backend with Vulkan
+RUN CMAKE_ARGS="-DGGML_VULKAN=on" \
+    FORCE_CMAKE=1 \
+    pip install --no-binary=llama-cpp-python llama-cpp-python
+
+# NVIDIA headless Vulkan ICD (EGL backend)
+RUN mkdir -p /etc/vulkan/icd.d && \
+    printf '%s\n' \
+'{' \
+'  "file_format_version": "1.0.1",' \
+'  "ICD": {' \
+'    "library_path": "libEGL_nvidia.so.0",' \
+'    "api_version": "1.4.312"' \
+'  }' \
+'}' > /etc/vulkan/icd.d/nvidia_egl_icd.json
+
+# Force the container to use the headless NVIDIA Vulkan driver
+ENV VK_DRIVER_FILES=/etc/vulkan/icd.d/nvidia_egl_icd.json
+
+
+# ============================================================
+# ================= DEBUG / DEV SECTION ======================
+# Everything below this line can be safely removed in production
+# ============================================================
+
+
+# Vulkan diagnostic tools
+RUN dnf -y install \
+      vulkan-tools \
+      which \
+      findutils && \
+    dnf clean all
+
+
+# Python Vulkan smoke test
+RUN printf '%s\n' \
+'import sys' \
+'import ctypes.util' \
+'print("Python:", sys.version)' \
+'print("Vulkan loader:", ctypes.util.find_library("vulkan"))' \
+'import llama_cpp' \
+'print("llama_cpp OK")' \
+> /app/test_llama_vulkan.py
+
+
+# Optional inference test
+RUN printf '%s\n' \
+'from llama_cpp import Llama' \
+'import os' \
+'' \
+'model = os.environ.get("LLAMA_MODEL", "/models/model.gguf")' \
+'print("model:", model)' \
+'' \
+'llm = Llama(model_path=model, n_gpu_layers=999, verbose=True)' \
+'' \
+'out = llm("Q: say hello in one word\nA:", max_tokens=8)' \
+'print(out["choices"][0]["text"])' \
+> /app/test_llama_infer.py
+
+
+# Debug entrypoint
+RUN printf '%s\n' \
+'#!/usr/bin/env bash' \
+'set -e' \
+'' \
+'export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/tmp/xdg-runtime}' \
+'mkdir -p $XDG_RUNTIME_DIR' \
+'' \
+'echo "=== Vulkan summary ==="' \
+'vulkaninfo --summary || true' \
+'' \
+'echo "=== Python test ==="' \
+'python /app/test_llama_vulkan.py || true' \
+'' \
+'if [ -f /models/model.gguf ]; then' \
+'  echo "=== inference test ==="' \
+'  python /app/test_llama_infer.py || true' \
+'fi' \
+'' \
+'exec "$@"' \
+> /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["bash"]
