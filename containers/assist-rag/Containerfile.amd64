@@ -1,0 +1,119 @@
+# krknctl Lightspeed RAG Container - AMD64 (x86_64) - FAISS-only (no LLM)
+FROM registry.fedoraproject.org/fedora-minimal:42 AS builder
+
+# Install build dependencies
+RUN microdnf -y install \
+    python3 \
+    python3-pip \
+    python3-devel \
+    curl \
+    bash \
+    git \
+    gcc \
+    gcc-c++ \
+    cmake \
+    make \
+    && microdnf clean all
+
+# Set working directory
+WORKDIR /app
+
+# Create and activate virtual environment
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
+# Configure pip for better reliability with timeouts and retries
+ENV PIP_DEFAULT_TIMEOUT=300 \
+    PIP_RETRIES=5
+
+# Copy application files from local project directory
+COPY requirements_krknctl.txt /app/requirements_krknctl.txt
+COPY fastapi_app.py /app/fastapi_app.py
+COPY utils /app/utils
+
+# Upgrade pip first
+RUN /app/venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install dependencies from requirements with increased timeout
+RUN /app/venv/bin/pip install --no-cache-dir --timeout=300 --retries=5 -r /app/requirements_krknctl.txt
+
+# Pre-download embedding model
+RUN mkdir -p /root/.cache/huggingface/transformers && \
+    /app/venv/bin/python -c "from sentence_transformers import SentenceTransformer; print('Downloading all-MiniLM-L12-v2 embedding model...'); model = SentenceTransformer('sentence-transformers/all-MiniLM-L12-v2'); print('Embedding model cached successfully')"
+
+# Copy build_index.py script
+COPY containers/assist-rag/build_index.py /app/build_index.py
+RUN chmod +x /app/build_index.py
+
+# BUILD-TIME INDEXING: Run the index builder script
+ENV GITHUB_REPO=https://github.com/krkn-chaos/website
+ENV REPO_PATH=content/en/docs
+ENV PERSIST_DIR=/app/faiss_index
+ENV KRKN_HUB_REPO=https://github.com/krkn-chaos/krkn-hub
+
+RUN /app/venv/bin/python /app/build_index.py && \
+    ls -la /app/faiss_index/ && \
+    echo "Index build completed successfully"
+
+# Cleanup
+RUN find /app/venv -name "*.pyc" -delete && \
+    find /app/venv -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    find /app/venv -name "*.pyo" -delete && \
+    find /app/venv -name "*.egg-info" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    rm -rf /tmp/* 2>/dev/null || true
+
+#############################################
+# Runtime stage - minimal runtime dependencies
+#############################################
+FROM registry.fedoraproject.org/fedora-minimal:42 AS runtime
+
+# Install only runtime dependencies
+RUN microdnf -y install \
+    python3 \
+    bash \
+    curl \
+    git \
+    && microdnf clean all
+
+# Set working directory
+WORKDIR /app
+
+# Copy the complete virtual environment from builder
+COPY --from=builder /app/venv/ /app/venv/
+
+# Activate virtual environment
+ENV PATH="/app/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/app/venv"
+
+# Copy FAISS index and cached data
+COPY --from=builder /app/faiss_index/ /app/faiss_index/
+COPY --from=builder /root/.cache/huggingface/ /root/.cache/huggingface/
+
+# Copy application files
+COPY --from=builder /app/fastapi_app.py /app/
+COPY --from=builder /app/utils/ /app/utils/
+
+# Copy build_index.py for potential runtime reindexing
+COPY --from=builder /app/build_index.py /app/build_index.py
+
+# Copy entrypoint script
+COPY containers/assist-rag/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Expose port for FastAPI service
+EXPOSE 8080
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    RELEVANCE_THRESHOLD=0.4 \
+    PERSIST_DIR=/app/faiss_index \
+    GITHUB_REPO=https://github.com/krkn-chaos/website \
+    REPO_PATH=content/en/docs \
+    KRKN_HUB_REPO=https://github.com/krkn-chaos/krkn-hub
+
+# Build argument to force reindexing at runtime (default: false)
+# Set to "true" to rebuild index on container start
+ENV FORCE_REINDEX=false
+
+# Run the entrypoint script
+ENTRYPOINT ["./entrypoint.sh"]

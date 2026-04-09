@@ -14,34 +14,55 @@ logger = logging.getLogger(__name__)
 
 
 class FaissDocumentIndexer:
-    """Documentation indexer using our proven
-    FAISS + all-MiniLM-L6-v2 approach"""
+    """Documentation indexer using
+    FAISS + all-mpnet-base-v2 approach"""
 
     def __init__(self, home_dir: str = "data"):
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L12-v2"
+        )
         self.documents = []
         self.embeddings = None
         self.index = None
         self.home_dir = home_dir
 
     def scrape_krkn_docs(
-        self, github_repo: str, repo_path: str
+        self,
+        github_repo: str,
+        repo_path: str,
+        branch: str = None,
+        local_path: str = None,
     ) -> List[Dict[str, Any]]:
-        """Fetch documentation by cloning GitHub repository"""
+        """Fetch scenarios documentation by cloning
+        GitHub repository or using local path
+
+        Args:
+            github_repo: URL of the
+                repository to clone (ignored if local_path is provided)
+            repo_path: Path within the repository to the docs folder
+            branch: Optional branch name to checkout
+                (ignored if local_path is provided)
+            local_path: Optional local path to use instead of cloning
+        """
         docs = []
 
         try:
-            docs = self._clone_and_extract_docs(github_repo, repo_path)
+            docs = self._clone_and_extract_docs(
+                github_repo, repo_path, branch, local_path
+            )
 
-            # Add chaos testing guide with specific chunking strategy
-            chaos_guide = self._fetch_chaos_testing_guide(github_repo)
-            if chaos_guide:
-                docs.append(chaos_guide)
-
-            logger.info(f"Found {len(docs)} documents from GitHub repository")
+            if local_path:
+                logger.info(
+                    f"Found {len(docs)} scenario " f"documents from local path"
+                )
+            else:
+                logger.info(
+                    f"Found {len(docs)} scenario "
+                    f"documents from GitHub repository"
+                )
 
         except Exception as e:
-            logger.error(f"Error during GitHub repository cloning: {e}")
+            logger.error(f"Error during documentation extraction: {e}")
 
         return docs
 
@@ -106,20 +127,39 @@ class FaissDocumentIndexer:
 
         return None
 
-    def _clone_repository(self, repo_url: str, temp_dir: str) -> str:
-        """Clone repository to directory and return the path"""
+    def _clone_repository(
+        self, repo_url: str, temp_dir: str, branch: str = None
+    ) -> str:
+        """Clone repository to directory and return the path
+
+        Args:
+            repo_url: URL of the repository to clone
+            temp_dir: Directory where to clone the repository
+            branch: Optional branch name
+                to checkout (defaults to repository's default branch)
+        """
         try:
-            logger.info(f"Cloning repository: {repo_url}")
+            clone_cmd = [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "--quiet",
+            ]
+
+            # Add branch parameter if specified
+            if branch:
+                clone_cmd.extend(["--branch", branch])
+                logger.info(
+                    f"Cloning repository: {repo_url} (branch: {branch})"
+                )
+            else:
+                logger.info(f"Cloning repository: {repo_url} (default branch)")
+
+            clone_cmd.extend([repo_url, temp_dir])
+
             subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "--depth",
-                    "1",
-                    "--quiet",
-                    repo_url,
-                    temp_dir,
-                ],
+                clone_cmd,
                 check=True,
                 capture_output=True,
                 text=True,
@@ -133,13 +173,13 @@ class FaissDocumentIndexer:
             raise
 
     def scrape_krkn_hub_scenarios(
-        self, github_repo: str
+        self, github_repo: str, branch: str = None
     ) -> List[Dict[str, Any]]:
         """Fetch krknctl-input.json files from krkn-hub repository"""
         docs = []
 
         try:
-            docs = self._clone_and_extract_scenario_inputs(github_repo)
+            docs = self._clone_and_extract_scenario_inputs(github_repo, branch)
             logger.info(
                 f"Found {len(docs)} scenario input definitions from krkn-hub"
             )
@@ -150,15 +190,43 @@ class FaissDocumentIndexer:
         return docs
 
     def _clone_and_extract_docs(
-        self, repo_url: str, docs_path: str
+        self,
+        repo_url: str,
+        docs_path: str,
+        branch: str = None,
+        local_path: str = None,
     ) -> List[Dict[str, Any]]:
-        """Clone repository and extract markdown files from docs directory"""
+        """Clone repository and extract markdown files from docs directory
+
+        Args:
+            repo_url: URL of the repository to clone
+            (ignored if local_path is provided)
+            docs_path: Path within the repository to the docs folder
+            branch: Optional branch name to checkout
+            (ignored if local_path is provided)
+            local_path: Optional local path to use instead of cloning
+        """
         docs = []
 
+        # Use local path if provided
+        if local_path:
+            logger.info(f"Using local path: {local_path}")
+            full_docs_path = os.path.join(local_path, docs_path)
+
+            if not os.path.exists(full_docs_path):
+                logger.warning(
+                    f"Documentation path not found: {full_docs_path}"
+                )
+                return docs
+
+            docs = self._extract_markdown_files(full_docs_path, docs_path)
+            return docs
+
+        # Otherwise, clone from GitHub
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 # Clone repository using shared method
-                self._clone_repository(repo_url, temp_dir)
+                self._clone_repository(repo_url, temp_dir, branch)
 
                 full_docs_path = os.path.join(temp_dir, docs_path)
 
@@ -177,7 +245,7 @@ class FaissDocumentIndexer:
         return docs
 
     def _clone_and_extract_scenario_inputs(
-        self, repo_url: str
+        self, repo_url: str, branch: str = None
     ) -> List[Dict[str, Any]]:
         """Clone krkn-hub repository and extract krknctl-input.json files"""
         docs = []
@@ -185,7 +253,7 @@ class FaissDocumentIndexer:
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 # Clone repository using shared method
-                self._clone_repository(repo_url, temp_dir)
+                self._clone_repository(repo_url, temp_dir, branch)
 
                 docs = self._extract_scenario_input_files(temp_dir)
 
@@ -326,7 +394,8 @@ class FaissDocumentIndexer:
     def _extract_markdown_files(
         self, base_path: str, relative_docs_path: str
     ) -> List[Dict[str, Any]]:
-        """Recursively extract markdown files from directory"""
+        """Recursively extract markdown files from directory,
+        filtering only scenarios documentation"""
         docs = []
 
         try:
@@ -334,8 +403,19 @@ class FaissDocumentIndexer:
                 for file in files:
                     if file.endswith(".md"):
                         file_path = os.path.join(root, file)
+
+                        # Filter: only include files under scenarios directory
+                        rel_path = os.path.relpath(file_path, base_path)
+                        if not rel_path.startswith("scenarios/"):
+                            logger.debug(
+                                f"Skipping non-scenario file: {rel_path}"
+                            )
+                            continue
+
                         # DEBUG: Log all markdown files found
-                        logger.info(f"Processing markdown file: {file_path}")
+                        logger.info(
+                            f"Processing scenario markdown file: {file_path}"
+                        )
                         doc = self._process_markdown_file(
                             file_path, base_path, relative_docs_path
                         )
@@ -355,6 +435,30 @@ class FaissDocumentIndexer:
 
         return docs
 
+    def _extract_krkn_hub_scenario_content(
+        self, content: str
+    ) -> tuple[str, str]:
+        """
+        Extract content from <krkn-hub-scenario id=""> tags
+        Returns tuple of (scenario_id, extracted_content)
+        Returns (None, None) if tag is not found
+        """
+        import re
+
+        # Match <krkn-hub-scenario id="scenario-name"> ... </krkn-hub-scenario>
+        pattern = (
+            r'<krkn-hub-scenario\s+id=["\']([^"\']+)["\']>'
+            r"(.*?)</krkn-hub-scenario>"
+        )
+        match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+
+        if match:
+            scenario_id = match.group(1).strip()
+            scenario_content = match.group(2).strip()
+            return scenario_id, scenario_content
+
+        return None, None
+
     def _process_markdown_file(
         self, file_path: str, base_path: str, relative_docs_path: str
     ) -> Dict[str, Any]:
@@ -372,6 +476,7 @@ class FaissDocumentIndexer:
             )
 
             # Parse frontmatter if present
+            original_content = content
             if content.startswith("---"):
                 try:
                     parts = content.split("---", 2)
@@ -391,6 +496,23 @@ class FaissDocumentIndexer:
                 except Exception:
                     pass
 
+            # Extract content from <krkn-hub-scenario> tag
+            scenario_id, scenario_content = (
+                self._extract_krkn_hub_scenario_content(original_content)
+            )
+
+            # Only index files that contain the krkn-hub-scenario tag
+            if not scenario_id or not scenario_content:
+                logger.debug(
+                    f"Skipping {rel_path}: no <krkn-hub-scenario> tag found"
+                )
+                return None
+
+            logger.info(
+                f"Found krkn-hub-scenario tag in {rel_path} "
+                f"with id='{scenario_id}'"
+            )
+
             # Generate URLs compatible with existing structure
             github_path = f"{relative_docs_path}/{rel_path}"
             github_url = (
@@ -404,10 +526,11 @@ class FaissDocumentIndexer:
             return {
                 "url": docs_url,
                 "title": title,
-                "content": content,
+                "content": scenario_content,  # Only index tagged content
                 "source": file_path,
                 "github_url": github_url,
                 "path": github_path,
+                "scenario_name": scenario_id,  # Store scenario ID
             }
 
         except Exception as e:
@@ -417,24 +540,53 @@ class FaissDocumentIndexer:
     def chunk_by_size(
         self, doc: Dict[str, Any], characters: int = 512
     ) -> List[Dict[str, Any]]:
-        """Split document by character count"""
+        """Split document by character count
+        without overlap for cleaner chunks"""
         chunks = []
         content = doc["content"]
 
-        # Split into chunks by character count
+        # For small documents, keep them whole
+        if len(content) <= characters * 1.5:
+            chunk = {
+                "url": doc["url"],
+                "title": doc["title"],
+                "content": content,
+                "source": doc["source"],
+                "chunk_type": "whole_document",
+            }
+            # Preserve scenario_name if present
+            if "scenario_name" in doc:
+                chunk["scenario_name"] = doc["scenario_name"]
+            chunks.append(chunk)
+            return chunks
+
+        # Split into chunks without overlap
         for i in range(0, len(content), characters):
             chunk_content = content[i : i + characters]  # NOQA
 
+            # Try to break at word boundaries to avoid cutting words
+            if (
+                i + characters < len(content)
+                and not content[i + characters].isspace()
+            ):
+                last_space = chunk_content.rfind(" ")
+                if (
+                    last_space > characters // 2
+                ):  # Only if we don't lose too much
+                    chunk_content = chunk_content[:last_space]
+
             if len(chunk_content.strip()) > 50:  # Only keep meaningful chunks
-                chunks.append(
-                    {
-                        "url": doc["url"],
-                        "title": doc["title"],
-                        "content": chunk_content,
-                        "source": doc["source"],
-                        "chunk_type": "size_based",
-                    }
-                )
+                chunk = {
+                    "url": doc["url"],
+                    "title": doc["title"],
+                    "content": chunk_content.strip(),
+                    "source": doc["source"],
+                    "chunk_type": "size_based_clean",
+                }
+                # Preserve scenario_name if present
+                if "scenario_name" in doc:
+                    chunk["scenario_name"] = doc["scenario_name"]
+                chunks.append(chunk)
 
         return chunks
 
@@ -459,19 +611,21 @@ class FaissDocumentIndexer:
                     if (
                         len(section_content) > 100
                     ):  # Only keep substantial sections
-                        chunks.append(
-                            {
-                                "url": f"{doc['url']}#"
-                                f"{current_heading_title.lower().replace(' ', '-').replace('/', '-')}",  # NOQA
-                                "title": f"{doc['title']}: {current_heading_title}",  # NOQA
-                                "content": section_content,
-                                "source": doc["source"],
-                                "chunk_type": "heading_based",
-                                "heading_level": heading,
-                                "section_title": current_heading_title,
-                                "section_number": section_number,
-                            }
-                        )
+                        chunk = {
+                            "url": f"{doc['url']}#"
+                            f"{current_heading_title.lower().replace(' ', '-').replace('/', '-')}",  # NOQA
+                            "title": f"{doc['title']}: {current_heading_title}",  # NOQA
+                            "content": section_content,
+                            "source": doc["source"],
+                            "chunk_type": "heading_based",
+                            "heading_level": heading,
+                            "section_title": current_heading_title,
+                            "section_number": section_number,
+                        }
+                        # Preserve scenario_name if present
+                        if "scenario_name" in doc:
+                            chunk["scenario_name"] = doc["scenario_name"]
+                        chunks.append(chunk)
 
                 # Start new section
                 current_heading_title = line.strip()[
@@ -487,24 +641,26 @@ class FaissDocumentIndexer:
         if current_section:
             section_content = "\n".join(current_section).strip()
             if len(section_content) > 100:
-                chunks.append(
-                    {
-                        "url": f"{doc['url']}#"
-                        f"{current_heading_title.lower().replace(' ', '-').replace('/', '-')}",  # NOQA
-                        "title": f"{doc['title']}: {current_heading_title}",
-                        "content": section_content,
-                        "source": doc["source"],
-                        "chunk_type": "heading_based",
-                        "heading_level": heading,
-                        "section_title": current_heading_title,
-                        "section_number": section_number,
-                    }
-                )
+                chunk = {
+                    "url": f"{doc['url']}#"
+                    f"{current_heading_title.lower().replace(' ', '-').replace('/', '-')}",  # NOQA
+                    "title": f"{doc['title']}: {current_heading_title}",
+                    "content": section_content,
+                    "source": doc["source"],
+                    "chunk_type": "heading_based",
+                    "heading_level": heading,
+                    "section_title": current_heading_title,
+                    "section_number": section_number,
+                }
+                # Preserve scenario_name if present
+                if "scenario_name" in doc:
+                    chunk["scenario_name"] = doc["scenario_name"]
+                chunks.append(chunk)
 
         return chunks
 
     def chunk_documents(
-        self, docs: List[Dict[str, Any]], chunk_size: int = 512
+        self, docs: List[Dict[str, Any]], chunk_size: int = 800
     ) -> List[Dict[str, Any]]:
         """Split documents into smaller chunks
         using their specified chunking strategy"""
@@ -593,20 +749,50 @@ class FaissDocumentIndexer:
         repo_path: str,
         output_dir: str,
         krkn_hub_repo: str = None,
+        github_branch: str = None,
+        krkn_hub_branch: str = None,
+        local_docs_path: str = None,
     ):
         """Build complete index from GitHub repo
-        and optionally krkn-hub scenarios"""
-        logger.info(f"Building index from {github_repo}/{repo_path}")
+        and optionally krkn-hub scenarios
+
+        Args:
+            github_repo: URL of the website repository
+            (ignored if local_docs_path is provided)
+            repo_path: Path within the repository to the docs folder
+            output_dir: Directory where to save the index
+            krkn_hub_repo: Optional URL of the krkn-hub repository
+            github_branch: Optional branch name for the website repository
+            (ignored if local_docs_path is provided)
+            krkn_hub_branch: Optional branch name for the krkn-hub repository
+            local_docs_path: Optional local path to use
+                instead of cloning from GitHub
+        """
+        if local_docs_path:
+            logger.info(
+                f"Building index from local path: "
+                f"{local_docs_path}/{repo_path}"
+            )
+        else:
+            logger.info(f"Building index from {github_repo}/{repo_path}")
+            if github_branch:
+                logger.info(f"Using branch: {github_branch}")
 
         # Scrape main documentation
-        docs = self.scrape_krkn_docs(github_repo, repo_path)
+        docs = self.scrape_krkn_docs(
+            github_repo, repo_path, github_branch, local_docs_path
+        )
         if not docs:
             raise Exception("No documents found to index")
 
         # Scrape krkn-hub scenarios if provided
         if krkn_hub_repo:
             logger.info(f"Also indexing scenarios from {krkn_hub_repo}")
-            scenario_docs = self.scrape_krkn_hub_scenarios(krkn_hub_repo)
+            if krkn_hub_branch:
+                logger.info(f"Using krkn-hub branch: {krkn_hub_branch}")
+            scenario_docs = self.scrape_krkn_hub_scenarios(
+                krkn_hub_repo, krkn_hub_branch
+            )
             logger.info(f"Found {len(scenario_docs)} scenario definitions")
             docs.extend(scenario_docs)
 

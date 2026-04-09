@@ -1,0 +1,17 @@
+FROM --platform=linux/arm64 fedora:42
+
+USER 0
+
+RUN dnf -y install \
+        dnf-plugins-core \
+        dnf-plugin-versionlock && \
+    dnf -y copr enable slp/mesa-libkrun-vulkan && \
+    dnf -y install \
+        mesa-vulkan-drivers.aarch64 \
+        vulkan-loader-devel.aarch64 \
+        vulkan-headers \
+        vulkan-tools.aarch64 \
+        vulkan-loader.aarch64 \
+        glslc && \
+    dnf versionlock add mesa-vulkan-drivers && \
+    dnf clean all

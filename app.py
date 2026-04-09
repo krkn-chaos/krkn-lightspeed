@@ -11,7 +11,7 @@ from utils.state_graph import get_context
 # https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps/build-conversational-apps
 
 
-st.title("krkn lightspeed RAG Chatbot")
+st.title("krkn assist RAG Chatbot")
 
 # Initialize chat history
 if "messages" not in st.session_state:
